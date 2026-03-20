@@ -1,0 +1,11 @@
+node_modules/
+auth_info_baileys/
+saved_media/
+.env
+usage.json
+*.mp3
+*.mp4
+*.jpg
+*.jpeg
+*.png
+creds.json
