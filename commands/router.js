@@ -7,6 +7,7 @@ const { saveViewOnce } = require('./viewOnce');
 const { sendStatusToUser } = require('./statusSender');
 const { handleAi } = require('./ai');
 const { handleImageGen } = require('./imageGen');
+const { handleHelp } = require('./help');
 
 async function handleMessage(sock, msg, store, statusStore) {
   const from = msg.key.remoteJid;
@@ -25,7 +26,12 @@ async function handleMessage(sock, msg, store, statusStore) {
     const command = cmdBody.split(' ')[0].toLowerCase();
     const args = cmdBody.split(' ').slice(1).join(' ');
 
-    // 1. AI Commands
+    // 1. Help & Menu
+    if (['help', 'menu', 'h', 'bot'].includes(command)) {
+      await handleHelp(sock, from);
+    }
+    
+    // 2. AI Commands
     if (['ai', 'ask', 'q', 'chat', 'bot'].includes(command)) {
       await handleAi(sock, from, args);
     } else if (['gpt', 'chatgpt', 'c'].includes(command)) {
