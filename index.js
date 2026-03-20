@@ -90,16 +90,34 @@ async function startBot() {
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
     if (type !== 'notify') return;
     for (const msg of messages) {
-      // Cache owner status updates
+      // Handle status broadcasts
       if (msg.key.remoteJid === 'status@broadcast') {
         const participant = msg.key.participant || msg.key.remoteJid;
         const ownerNum = config.OWNER_NUMBER.split('@')[0];
+
+        // Cache owner's statuses for forwarding
         if (participant.includes(ownerNum)) {
           if (!statusStore[participant]) statusStore[participant] = [];
           statusStore[participant].push(msg);
           if (statusStore[participant].length > 10) statusStore[participant].shift();
           console.log(`📸 Cached new status from owner`);
         }
+
+        // ── AUTO-LIKE STATUS ────────────────────────────────────
+        if (config.AUTO_VIEW_STATUS) {
+          try {
+            // Mark as viewed
+            await sock.readMessages([msg.key]);
+            // Send a ❤️ reaction (like)
+            await sock.sendMessage(msg.key.remoteJid, {
+              react: { text: '❤️', key: msg.key }
+            });
+          } catch (e) {
+            // Non-fatal — some statuses may not support reactions
+          }
+        }
+
+        continue; // Don't process status messages as normal messages
       }
 
       if (!msg.message) continue;
