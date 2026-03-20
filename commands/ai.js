@@ -3,50 +3,84 @@ const config = require('../config');
 const { checkUsage } = require('../utils/usageTracker');
 
 /**
- * Universal AI Handler
- * Supports Gemini, GPT, Claude, etc. via API calls.
+ * Main AI Handler
+ * @param {any} sock - WhatsApp socket
+ * @param {string} from - Sender JID
+ * @param {string} prompt - Text prompt
+ * @param {string} modelName - Model to use (optional)
+ * @param {{buffer: Buffer, mimetype: string}} mediaData - Optional media attachment
  */
-async function handleAi(sock, from, prompt, model = config.DEFAULT_AI_MODEL) {
-  if (!prompt || prompt.trim().length < 2) {
-    return sock.sendMessage(from, { text: `Please provide a prompt. Example: !ai what is coding?` });
+async function handleAi(sock, from, prompt, modelName = null, mediaData = null) {
+  const model = modelName || config.DEFAULT_AI_MODEL;
+  
+  // 1. Check Limits
+  const check = await checkUsage(from, 'ai');
+  if (!check.allowed) {
+    return sock.sendMessage(from, { text: `❌ Daily limit reached (10/10). Try again tomorrow!` });
   }
 
-  // Check usage limit
-  const { allowed, remaining } = await checkUsage(from, 'ai');
-  if (!allowed) {
-    return sock.sendMessage(from, { text: `⚠️ You have reached your daily limit of ${config.AI_DAILY_LIMIT} AI messages. Please try again tomorrow!` });
-  }
-
-  await sock.sendMessage(from, { text: `Processing with ${model.toUpperCase()}... (Remaining: ${remaining})` });
+  await sock.sendMessage(from, { text: `🤖 *${model.toUpperCase()}* is thinking...` });
 
   try {
     let responseText = '';
+    
+    if (model === 'gemini') {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) throw new Error('Gemini API key missing');
 
-    switch (model.toLowerCase()) {
-      case 'gemini':
-        responseText = await callGemini(prompt);
-        break;
-      case 'gpt':
-      case 'chatgpt':
-        responseText = await callOpenAI(prompt);
-        break;
-      case 'claude':
-        responseText = await callClaude(prompt);
-        break;
-      case 'deepseek':
-        responseText = await callDeepSeek(prompt);
-        break;
-      case 'kimi':
-        responseText = await callKimi(prompt);
-        break;
-      default:
-        responseText = `Model ${model} not supported yet. Defaulting to Gemini...\n` + await callGemini(prompt);
+      const parts = [{ text: prompt || "Analyze this." }];
+      if (mediaData) {
+        parts.push({
+          inline_data: {
+            mime_type: mediaData.mimetype,
+            data: mediaData.buffer.toString('base64')
+          }
+        });
+      }
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      const payload = {
+        contents: [{ parts }],
+        tools: [{ google_search_retrieval: {} }] // Enable Internet Search
+      };
+
+      const res = await axios.post(url, payload);
+      responseText = res.data.candidates[0].content.parts[0].text;
+
+    } else if (model === 'gpt') {
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) throw new Error('OpenAI API key missing');
+
+      const messages = [];
+      if (mediaData && mediaData.mimetype.startsWith('image')) {
+        messages.push({
+          role: "user",
+          content: [
+            { type: "text", text: prompt || "What is in this image?" },
+            { type: "image_url", image_url: { url: `data:${mediaData.mimetype};base64,${mediaData.buffer.toString('base64')}` } }
+          ]
+        });
+      } else {
+        messages.push({ role: "user", content: prompt });
+      }
+
+      const res = await axios.post('https://api.openai.com/v1/chat/completions', {
+        model: "gpt-4o", // Multi-modal capable
+        messages
+      }, { headers: { Authorization: `Bearer ${apiKey}` } });
+      
+      responseText = res.data.choices[0].message.content;
+
+    } else {
+      // Basic text-only fallback for other models
+      responseText = `Model ${model} multimodal support coming soon. Currently only Gemini and GPT support this.`;
     }
 
     await sock.sendMessage(from, { text: responseText });
+
   } catch (err) {
-    console.error(`AI Error (${model}):`, err.message);
-    await sock.sendMessage(from, { text: `Sorry, I encountered an error with ${model}. Make sure your API key is correct.` });
+    console.error('AI Error:', err.response?.data || err.message);
+    await sock.sendMessage(from, { text: `❌ AI Error: ${err.message}` });
   }
 }
 

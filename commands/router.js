@@ -1,3 +1,4 @@
+const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 const config = require('../config');
 const { handleAutoReply } = require('./autoReply');
 const { handleMp3 } = require('./mp3');
@@ -8,6 +9,7 @@ const { sendStatusToUser } = require('./statusSender');
 const { handleAi } = require('./ai');
 const { handleImageGen } = require('./imageGen');
 const { handleHelp } = require('./help');
+const { handleSocialDownload } = require('./socialDL');
 
 async function handleMessage(sock, msg, store, statusStore) {
   const from = msg.key.remoteJid;
@@ -56,6 +58,11 @@ async function handleMessage(sock, msg, store, statusStore) {
       await handleMp3(sock, from, args);
     } else if (['mp4', 'v', 'video', 'movie', 'vid'].includes(command)) {
       await handleMp4(sock, from, args);
+    } 
+    
+    // 4. Social Media Downloader (Direct Links)
+    else if (['tiktok', 'tt', 'ig', 'insta', 'instagram', 'tw', 'fb', 'yt', 'sc', 'dl'].includes(command)) {
+      await handleSocialDownload(sock, from, args);
     }
     
     // 4. Utilities
@@ -81,10 +88,28 @@ async function handleMessage(sock, msg, store, statusStore) {
     await handleAutoReply(sock, from, body);
   }
 
-  // DM Auto-AI logic
-  if (config.AUTO_AI && !isGroup && !msg.key.fromMe) {
-    // Only auto-reply with AI if it's not a command and not from yourself
-    await handleAi(sock, from, body);
+  // Final AI logic (DMs or Media with caption)
+  const isMedia = msg.message?.imageMessage || msg.message?.audioMessage || msg.message?.videoMessage || msg.message?.documentMessage;
+  let mediaData = null;
+
+  if (isMedia) {
+    try {
+      const buffer = await downloadMediaMessage(msg, 'buffer', {});
+      const mimetype = msg.message?.imageMessage?.mimetype || 
+                       msg.message?.audioMessage?.mimetype || 
+                       msg.message?.videoMessage?.mimetype || 
+                       msg.message?.documentMessage?.mimetype;
+      mediaData = { buffer, mimetype };
+    } catch (e) {
+      console.error('Buffer extraction error:', e);
+    }
+  }
+
+  // Handle DMs as AI conversations OR handle media questions
+  if (!msg.key.fromMe && (config.AUTO_AI || isMedia)) {
+    if (!isGroup || (isGroup && body.startsWith(config.PREFIX + 'ai'))) {
+      await handleAi(sock, from, body.replace(config.PREFIX + 'ai', '').trim(), null, mediaData);
+    }
   }
 }
 

@@ -15,8 +15,11 @@ async function downloadWithYtDlp(query, formatOptions) {
   const outputTemplate = path.join(tmpDir, `${uniqueId}.%(ext)s`);
   
   try {
-    const cmd = `yt-dlp ${formatOptions} -o "${outputTemplate}" "ytsearch1:${query}"`;
-    execSync(cmd, { stdio: 'pipe', timeout: 120000 });
+    // If query is a URL, don't use ytsearch
+    const source = query.startsWith('http') ? `"${query}"` : `"ytsearch1:${query}"`;
+    const cmd = `yt-dlp ${formatOptions} -o "${outputTemplate}" ${source}`;
+    
+    execSync(cmd, { stdio: 'pipe', timeout: 180000 }); // 3 min timeout for larger videos
 
     const files = fs.readdirSync(tmpDir).filter(f => f.startsWith(uniqueId.toString()));
     if (!files.length) return null;

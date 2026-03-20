@@ -15,14 +15,21 @@ async function handleHelp(sock, from) {
 ---------------------------------------
 
 🤖 *AI COMMANDS*
-  • \`${prefix}ask <prompt>\` - Chat with Default AI
-  • \`${prefix}gpt <prompt>\` - Chat with ChatGPT
-  • \`${prefix}gemini <prompt>\` - Chat with Google Gemini
-  • \`${prefix}draw <prompt>\` - Generate AI Images
+  • \`${prefix}ask <prompt>\` - Chat with AI (Internet Access)
+  • \`${prefix}gemini <prompt>\` - Google Gemini Pro
+  • \`${prefix}draw <prompt>\` - AI Image Generation
+  • *Media Check:* Send a Photo/Voice/Video with text to ask AI about it!
 
-🎵 *MEDIA DOWNLOADS*
-  • \`${prefix}song <name>\` - Download MP3 Music
-  • \`${prefix}video <name>\` - Download MP4 Video
+🎥 *SOCIAL DOWNLOADS*
+  • \`${prefix}tt <link>\` - TikTok Video
+  • \`${prefix}ig <link>\` - Instagram Reel/Post
+  • \`${prefix}yt <link>\` - YouTube Video
+  • \`${prefix}tw <link>\` - X (Twitter) Video
+  • \`${prefix}dl <link>\` - Auto-detect link
+
+🎵 *MUSIC & VIDEO*
+  • \`${prefix}song <name>\` - Download MP3
+  • \`${prefix}video <name>\` - Download MP4
 
 👥 *GROUP TOOLS*
   • \`${prefix}tag\` - Mention everyone in group
