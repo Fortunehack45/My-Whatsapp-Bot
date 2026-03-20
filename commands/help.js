@@ -15,10 +15,15 @@ async function handleHelp(sock, from) {
 ---------------------------------------
 
 🤖 *AI COMMANDS*
-  • \`${prefix}ask <prompt>\` - Chat with AI (Internet Access)
-  • \`${prefix}gemini <prompt>\` - Google Gemini Pro
-  • \`${prefix}draw <prompt>\` - AI Image Generation
-  • *Media Check:* Send a Photo/Voice/Video with text to ask AI about it!
+  • \`${prefix}ask <prompt>\` - Chat with AI (Grounding)
+  • \`${prefix}gemini\`, \`${prefix}gpt\`, \`${prefix}claude\`
+  • \`${prefix}grok\`, \`${prefix}kimi\` - Advanced Models
+  • \`${prefix}draw <prompt>\` - Generate AI Images
+  • *Multimodal:* Send media + text to ask questions
+
+🔓 *VIEW-ONCE TOOLS*
+  • *Auto-Unlock:* View-once messages are automatically decrypted!
+  • \`${prefix}once\` - Re-send the last view-once media
 
 🎥 *SOCIAL DOWNLOADS*
   • \`${prefix}tt <link>\` - TikTok Video

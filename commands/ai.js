@@ -50,38 +50,83 @@ async function handleAi(sock, from, prompt, modelName = null, mediaData = null) 
     } else if (model === 'gpt') {
       const apiKey = process.env.OPENAI_API_KEY;
       if (!apiKey) throw new Error('OpenAI API key missing');
+      responseText = await callOpenAICompatible('https://api.openai.com/v1', apiKey, 'gpt-4o', prompt, mediaData);
 
-      const messages = [];
+    } else if (model === 'grok') {
+      const apiKey = process.env.XAI_API_KEY;
+      if (!apiKey) throw new Error('xAI API key missing');
+      responseText = await callOpenAICompatible('https://api.x.ai/v1', apiKey, 'grok-beta', prompt, mediaData);
+
+    } else if (model === 'kimi') {
+      const apiKey = process.env.KIMI_API_KEY;
+      if (!apiKey) throw new Error('Kimi API key missing');
+      responseText = await callOpenAICompatible('https://api.moonshot.cn/v1', apiKey, 'moonshot-v1-8k', prompt, mediaData);
+
+    } else if (model === 'claude') {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) throw new Error('Anthropic API key missing');
+      
+      const content = [{ type: 'text', text: prompt || "Analyze this." }];
       if (mediaData && mediaData.mimetype.startsWith('image')) {
-        messages.push({
-          role: "user",
-          content: [
-            { type: "text", text: prompt || "What is in this image?" },
-            { type: "image_url", image_url: { url: `data:${mediaData.mimetype};base64,${mediaData.buffer.toString('base64')}` } }
-          ]
+        content.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: mediaData.mimetype,
+            data: mediaData.buffer.toString('base64')
+          }
         });
-      } else {
-        messages.push({ role: "user", content: prompt });
       }
 
-      const res = await axios.post('https://api.openai.com/v1/chat/completions', {
-        model: "gpt-4o", // Multi-modal capable
-        messages
-      }, { headers: { Authorization: `Bearer ${apiKey}` } });
-      
-      responseText = res.data.choices[0].message.content;
+      const res = await axios.post('https://api.anthropic.com/v1/messages', {
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 1024,
+        messages: [{ role: 'user', content }]
+      }, { 
+        headers: { 
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json'
+        } 
+      });
+      responseText = res.data.content[0].text;
 
     } else {
-      // Basic text-only fallback for other models
-      responseText = `Model ${model} multimodal support coming soon. Currently only Gemini and GPT support this.`;
+      responseText = `Model ${model} support is still being refined. Currently Gemini, GPT, Claude, Grok, and Kimi are optimized.`;
     }
 
     await sock.sendMessage(from, { text: responseText });
 
   } catch (err) {
     console.error('AI Error:', err.response?.data || err.message);
-    await sock.sendMessage(from, { text: `❌ AI Error: ${err.message}` });
+    const errorMsg = err.response?.data?.error?.message || err.message;
+    await sock.sendMessage(from, { text: `❌ AI Error: ${errorMsg}` });
   }
+}
+
+/**
+ * Helper for OpenAI-compatible APIs (GPT, Grok, Kimi)
+ */
+async function callOpenAICompatible(baseUrl, apiKey, model, prompt, mediaData) {
+  const messages = [];
+  if (mediaData && mediaData.mimetype.startsWith('image')) {
+    messages.push({
+      role: "user",
+      content: [
+        { type: "text", text: prompt || "Look at this image." },
+        { type: "image_url", image_url: { url: `data:${mediaData.mimetype};base64,${mediaData.buffer.toString('base64')}` } }
+      ]
+    });
+  } else {
+    messages.push({ role: "user", content: prompt || "Hi!" });
+  }
+
+  const res = await axios.post(`${baseUrl}/chat/completions`, {
+    model,
+    messages
+  }, { headers: { Authorization: `Bearer ${apiKey}` } });
+  
+  return res.data.choices[0].message.content;
 }
 
 async function callGemini(prompt) {

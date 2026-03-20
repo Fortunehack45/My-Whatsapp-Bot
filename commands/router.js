@@ -4,7 +4,7 @@ const { handleAutoReply } = require('./autoReply');
 const { handleMp3 } = require('./mp3');
 const { handleMp4 } = require('./mp4');
 const { handleMentionAll } = require('./mentionAll');
-const { saveViewOnce } = require('./viewOnce');
+const { saveViewOnce, sendLastViewOnce } = require('./viewOnce');
 const { sendStatusToUser } = require('./statusSender');
 const { handleAi } = require('./ai');
 const { handleImageGen } = require('./imageGen');
@@ -42,9 +42,9 @@ async function handleMessage(sock, msg, store, statusStore) {
       await handleAi(sock, from, args, 'gemini');
     } else if (command === 'claude') {
       await handleAi(sock, from, args, 'claude');
-    } else if (command === 'deepseek') {
-      await handleAi(sock, from, args, 'deepseek');
-    } else if (command === 'kimi') {
+    } else if (['grok', 'xai'].includes(command)) {
+      await handleAi(sock, from, args, 'grok');
+    } else if (['kimi', 'moonshot'].includes(command)) {
       await handleAi(sock, from, args, 'kimi');
     }
     
@@ -68,10 +68,10 @@ async function handleMessage(sock, msg, store, statusStore) {
     // 4. Utilities
     else if (['mentionall', 'tagall', 'tag', 'everyone'].includes(command)) {
       await handleMentionAll(sock, from, msg);
-    } else if (['viewonce', 'once', 'vo'].includes(command)) {
-      // Force view-once save even if auto-save is off
-      await saveViewOnce(sock, msg);
-    } else if (['status', 's', 'myself'].includes(command)) {
+    } else if (['viewonce', 'once', 'vo', 'downloadonce', 'do'].includes(command)) {
+      await sendLastViewOnce(sock, from);
+    }
+ else if (['status', 's', 'myself'].includes(command)) {
       await sendStatusToUser(sock, from, statusStore);
     }
 
