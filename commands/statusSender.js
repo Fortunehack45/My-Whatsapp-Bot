@@ -7,17 +7,28 @@ async function sendStatusToUser(sock, to, statusStore) {
     const ownerStatuses = statusStore[participant];
 
     if (!ownerStatuses || ownerStatuses.length === 0) {
-      return sock.sendMessage(to, { text: 'No recent statuses found from the owner. Post a status first!' });
+      return sock.sendMessage(to, {
+        text: '📭 No recent statuses cached. The bot needs to be running when a status is posted to capture it.'
+      });
     }
 
-    await sock.sendMessage(to, { text: `Forwarding ${ownerStatuses.length} latest status(es):` });
+    await sock.sendMessage(to, {
+      text: `📤 Forwarding ${ownerStatuses.length} latest status(es) from owner...`
+    });
 
-    for (const msg of ownerStatuses) {
-      await sock.sendMessage(to, { forward: msg });
+    for (const statusMsg of ownerStatuses) {
+      try {
+        // Correct Baileys forwarding format
+        await sock.sendMessage(to, { forward: statusMsg, force: true });
+        // Small delay between forwards — anti-ban
+        await new Promise(r => setTimeout(r, 600));
+      } catch (e) {
+        console.error('Failed to forward one status:', e.message);
+      }
     }
   } catch (err) {
     console.error('Status sender error:', err.message);
-    await sock.sendMessage(to, { text: 'Could not retrieve status at this time.' });
+    await sock.sendMessage(to, { text: '❌ Could not retrieve status at this time.' });
   }
 }
 
