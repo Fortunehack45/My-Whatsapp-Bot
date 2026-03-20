@@ -10,10 +10,18 @@ const { handleAi } = require('./ai');
 const { handleImageGen } = require('./imageGen');
 const { handleHelp } = require('./help');
 const { handleSocialDownload } = require('./socialDL');
+const { isRateLimited, simulateTyping, markAsRead, humanDelay } = require('../utils/antiBan');
 
 async function handleMessage(sock, msg, store, statusStore) {
   const from = msg.key.remoteJid;
   const isGroup = from.endsWith('@g.us');
+
+  // ── ANTI-BAN: Skip own messages and rate-limit heavy users ─────
+  if (msg.key.fromMe) return;
+  if (isRateLimited(from)) return; // 1 request per 5s per user
+
+  // Mark message as read (human-like behavior)
+  await markAsRead(sock, msg);
 
   // Extract message body from all message types
   const body =
@@ -35,34 +43,43 @@ async function handleMessage(sock, msg, store, statusStore) {
 
     // 1. Help & Menu  (must be first to prevent conflicts)
     if (['help', 'menu', 'h'].includes(command)) {
+      await simulateTyping(sock, from, 1000);
       return await handleHelp(sock, from);
     }
 
     // 2. AI Text Commands
     if (['ai', 'ask', 'q', 'chat'].includes(command)) {
+      await simulateTyping(sock, from, 1200);
       return await handleAi(sock, from, args);
     }
     if (['gpt', 'chatgpt'].includes(command)) {
+      await simulateTyping(sock, from, 1200);
       return await handleAi(sock, from, args, 'gpt');
     }
     if (['gemini', 'g'].includes(command)) {
+      await simulateTyping(sock, from, 1200);
       return await handleAi(sock, from, args, 'gemini');
     }
     if (command === 'claude') {
+      await simulateTyping(sock, from, 1200);
       return await handleAi(sock, from, args, 'claude');
     }
     if (['grok', 'xai'].includes(command)) {
+      await simulateTyping(sock, from, 1200);
       return await handleAi(sock, from, args, 'grok');
     }
     if (['kimi', 'moonshot'].includes(command)) {
+      await simulateTyping(sock, from, 1200);
       return await handleAi(sock, from, args, 'kimi');
     }
     if (command === 'deepseek') {
+      await simulateTyping(sock, from, 1200);
       return await handleAi(sock, from, args, 'deepseek');
     }
 
     // 3. Image Generation
     if (['draw', 'img', 'pic', 'art', 'photo', 'generate'].includes(command)) {
+      await simulateTyping(sock, from, 800);
       return await handleImageGen(sock, from, args);
     }
 
