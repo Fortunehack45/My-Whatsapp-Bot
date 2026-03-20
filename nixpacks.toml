@@ -1,11 +1,11 @@
 [phases.setup]
-nixPkgs = ["ffmpeg", "yt-dlp"]
+nixPkgs = ["ffmpeg", "python311", "yt-dlp"]
 
 [phases.install]
-cmds = ["npm install"]
+cmds = ["npm install --production"]
 
 [phases.build]
-# No build step required for this bot
+cmds = ["echo 'No build step required'"]
 
 [start]
 cmd = "npm start"
