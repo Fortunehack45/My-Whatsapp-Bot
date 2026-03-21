@@ -33,6 +33,12 @@ async function saveUsageData(data) {
  * @returns {Promise<{allowed: boolean, remaining: number}>}
  */
 async function checkUsage(jid, type) {
+  // ── OWNER BYPASS: Owner has unlimited access ──────────────────
+  const ownerNum = config.OWNER_NUMBER.split('@')[0];
+  if (jid.includes(ownerNum)) {
+    return { allowed: true, remaining: 999 };
+  }
+
   const data = await getUsageData();
   const today = new Date().toISOString().split('T')[0];
 

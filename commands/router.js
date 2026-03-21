@@ -11,6 +11,7 @@ const { handleImageGen } = require('./imageGen');
 const { handleHelp } = require('./help');
 const { handleSocialDownload } = require('./socialDL');
 const { isRateLimited, simulateTyping, markAsRead, humanDelay } = require('../utils/antiBan');
+const { isOwner } = require('../utils/ownerCheck');
 
 async function handleMessage(sock, msg, store, statusStore) {
   const from = msg.key.remoteJid;
@@ -109,6 +110,41 @@ async function handleMessage(sock, msg, store, statusStore) {
     // 8. Status
     if (['status', 's'].includes(command)) {
       return await sendStatusToUser(sock, from, statusStore);
+    }
+
+    // 9. OWNER ONLY COMMANDS
+    if (['broadcast', 'bc'].includes(command)) {
+      if (!isOwner(from) && !isOwner(msg.key.participant || from)) {
+        return sock.sendMessage(from, { text: '⛔ This command is restricted to the bot owner.' });
+      }
+      if (!args) return sock.sendMessage(from, { text: 'Please provide a message to broadcast.' });
+      
+      const chats = await sock.groupFetchAllParticipating();
+      const groupJids = Object.keys(chats);
+      
+      await sock.sendMessage(from, { text: `📢 Broadcasting to ${groupJids.length} groups...` });
+      
+      let successCount = 0;
+      for (const jid of groupJids) {
+        try {
+          await sock.sendMessage(jid, { text: `📢 *OWNER BROADCAST*\n\n${args}` });
+          await new Promise(r => setTimeout(r, 1000)); // Anti-ban delay between groups
+          successCount++;
+        } catch (e) {
+          console.error(`Failed to broadcast to ${jid}:`, e.message);
+        }
+      }
+      return sock.sendMessage(from, { text: `✅ Broadcast complete! Sent to ${successCount} groups.` });
+    }
+
+    if (command === 'resetlimits') {
+      if (!isOwner(from) && !isOwner(msg.key.participant || from)) {
+        return sock.sendMessage(from, { text: '⛔ This command is restricted to the bot owner.' });
+      }
+      const fs = require('fs-extra');
+      const path = require('path');
+      await fs.writeFile(path.join(__dirname, '../../usage.json'), '{}');
+      return sock.sendMessage(from, { text: '🔄 All user usage limits have been reset!' });
     }
 
     return; // Unknown command — ignore

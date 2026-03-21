@@ -2,12 +2,12 @@
  * Anti-Ban Protection Utilities
  * Simulates human-like behavior to avoid WhatsApp account bans.
  */
+const config = require('../config');
 
 /**
  * Adds a random human-like delay before responding.
- * Prevents instant bot-like responses that trigger spam detection.
- * @param {number} minMs - Minimum delay in ms (default 800ms)
- * @param {number} maxMs - Maximum delay in ms (default 2500ms)
+ * @param {number} minMs
+ * @param {number} maxMs
  */
 function humanDelay(minMs = 800, maxMs = 2500) {
   const delay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
@@ -15,14 +15,17 @@ function humanDelay(minMs = 800, maxMs = 2500) {
 }
 
 /**
- * Per-user rate limiter.
- * Prevents a single user from spamming the bot and triggering WhatsApp flags.
- * Limits to 1 message every 5 seconds per user.
+ * Per-user rate limiter. Max 1 request per user per 5 seconds.
+ * Owner is always allowed through.
  */
 const lastMessageTime = {};
-const RATE_LIMIT_MS = 5000; // 5-second cooldown per user
+const RATE_LIMIT_MS = 5000;
 
 function isRateLimited(jid) {
+  // ── OWNER BYPASS ─────────────────────────────────────────────
+  const ownerNum = config.OWNER_NUMBER.split('@')[0];
+  if (jid.includes(ownerNum)) return false;
+
   const now = Date.now();
   const last = lastMessageTime[jid] || 0;
   if (now - last < RATE_LIMIT_MS) return true;
