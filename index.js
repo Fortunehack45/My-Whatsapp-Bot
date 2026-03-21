@@ -31,28 +31,29 @@ let alwaysOnlineInterval = null; // Reference so we can clear it on reconnect
 
 async function startBot() {
   console.log('───────────────────────────────────────');
-  if (PAIRING_NUMBER) {
-    console.log('🔄 STARTING BOT IN PAIRING CODE MODE');
-    console.log(`📱 Target Number: ${PAIRING_NUMBER}`);
-  } else {
-    console.log('🔄 STARTING BOT IN QR CODE MODE');
-    console.log('🧹 Clearing old auth state to force new QR generation...');
-    fs.emptyDirSync('auth_info_baileys'); // Force clean state for QR
+  console.log('🔄 STARTING BOT (Dual-Login Enabled)');
+  if (PAIRING_NUMBER) console.log(`📱 Pairing Number: ${PAIRING_NUMBER}`);
+  
+  // Safety: If we're not registered, clear stale/corrupt session data to avoid "wrong number"
+  if (!state.creds.registered) {
+    console.log('🧹 Cleaning up stale session data...');
+    fs.emptyDirSync('auth_info_baileys');
   }
   console.log('───────────────────────────────────────');
 
-  const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
+  // Multi-file auth state (re-init after potentially clearing)
+  const { state: newState, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
   const { version } = await fetchLatestBaileysVersion();
 
   const sock = makeWASocket({
     version,
     auth: {
-      creds: state.creds,
-      keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' }))
+      creds: newState.creds,
+      keys: makeCacheableSignalKeyStore(newState.keys, pino({ level: 'silent' }))
     },
-    printQRInTerminal: !PAIRING_NUMBER, // Enable QR if no pairing number is set
+    printQRInTerminal: true, // Always show QR as a backup
     mobile: false, 
-    browser: ['Mac OS', 'Chrome', '121.0.6167.85'],
+    browser: Browsers.ubuntu('Chrome'),
     keepAliveIntervalMs: 10_000,
     connectTimeoutMs: 60_000,
     defaultQueryTimeoutMs: 60_000,
@@ -63,14 +64,14 @@ async function startBot() {
 
   // ── AUTHENTICATION FLOW ─────────────────────────────────────────
   sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr, isNewLogin }) => {
-    // 1. QR Code Flow (Fallback)
-    if (qr && !PAIRING_NUMBER) {
-       console.log('\n📱 Scan the QR code above with your WhatsApp to connect!\n');
+    // 1. QR Code (Always as fallback)
+    if (qr) {
+       console.log('\n📱 ALTERNATIVE: Scan the QR code below if Pairing Code fails:');
        qrcode.generate(qr, { small: true });
     }
 
     // 2. Pairing Code Flow
-    if (qr && PAIRING_NUMBER && !state.creds.registered && !sock._pairingRequested) {
+    if (qr && PAIRING_NUMBER && !newState.creds.registered && !sock._pairingRequested) {
       sock._pairingRequested = true;
       try {
         // Small delay to ensure socket is ready
