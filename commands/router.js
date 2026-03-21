@@ -143,7 +143,7 @@ async function handleMessage(sock, msg, store, statusStore) {
       }
       const fs = require('fs-extra');
       const path = require('path');
-      await fs.writeFile(path.join(__dirname, '../../usage.json'), '{}');
+      await fs.writeFile(path.join(__dirname, '../usage.json'), '{}');
       return sock.sendMessage(from, { text: '🔄 All user usage limits have been reset!' });
     }
 

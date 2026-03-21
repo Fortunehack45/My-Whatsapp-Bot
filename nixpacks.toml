@@ -2,7 +2,8 @@
 nixPkgs = ["ffmpeg", "python311", "yt-dlp"]
 
 [phases.install]
-cmds = ["npm install --production"]
+# Do NOT use --production — we need all dependencies
+cmds = ["npm install"]
 
 [phases.build]
 cmds = ["echo 'No build step required'"]

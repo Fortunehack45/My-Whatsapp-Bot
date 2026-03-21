@@ -1,53 +1,69 @@
 const axios = require('axios');
-const fs = require('fs-extra');
-const path = require('path');
-const os = require('os');
 const config = require('../config');
 const { checkUsage } = require('../utils/usageTracker');
 
 /**
- * AI Image Generation Handler
+ * AI Image Generation Handler (DALL-E 3 via OpenAI)
+ * Requires: OPENAI_API_KEY in .env
  */
 async function handleImageGen(sock, from, prompt) {
   if (!prompt || prompt.trim().length < 2) {
-    return sock.sendMessage(from, { text: 'Please provide a description for the image. Example: !draw a futuristic city' });
+    return sock.sendMessage(from, {
+      text: '🎨 Please describe the image.\nExample: *!draw a futuristic city at night with neon lights*'
+    });
   }
 
-  // Check usage limit
+  // Check daily usage limit (owner is exempt)
   const { allowed, remaining } = await checkUsage(from, 'img');
   if (!allowed) {
-    return sock.sendMessage(from, { text: `⚠️ You have reached your daily limit of ${config.IMG_DAILY_LIMIT} image generations. Please try again tomorrow!` });
+    return sock.sendMessage(from, {
+      text: `⚠️ You've reached your daily image limit (${config.IMG_DAILY_LIMIT}/day). Try again tomorrow!`
+    });
   }
 
-  await sock.sendMessage(from, { text: `Generating image... this may take a few seconds. (Remaining: ${remaining})` });
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey || apiKey === 'your_openai_key') {
+    return sock.sendMessage(from, {
+      text: '🔑 Image generation requires an OpenAI API key. Add OPENAI_API_KEY to your .env file.'
+    });
+  }
+
+  await sock.sendMessage(from, {
+    text: `🎨 Generating image...\n_"${prompt}"_\n\nThis may take a few seconds. (Remaining today: ${remaining})`
+  });
 
   try {
-    // Example using OpenAI DALL-E (requires key)
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey || apiKey === 'your_openai_key') {
-      return sock.sendMessage(from, { text: 'OpenAI API key missing. Image generation requires a valid key.' });
-    }
-
-    const response = await axios.post('https://api.openai.com/v1/images/generations', {
-      prompt: prompt,
-      n: 1,
-      size: '512x512'
-    }, {
-      headers: { 'Authorization': `Bearer ${apiKey}` }
-    });
+    // DALL-E 3 — higher quality, better instruction-following
+    const response = await axios.post(
+      'https://api.openai.com/v1/images/generations',
+      {
+        model: 'dall-e-3',
+        prompt: prompt,
+        n: 1,
+        size: '1024x1024',
+        response_format: 'url'
+      },
+      { headers: { Authorization: `Bearer ${apiKey}` } }
+    );
 
     const imageUrl = response.data.data[0].url;
-    const imagePreview = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-    const buffer = Buffer.from(imagePreview.data);
+    const revised = response.data.data[0].revised_prompt; // DALL-E 3 sometimes revises prompts
+
+    // Fetch image as buffer
+    const imageRes = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const buffer = Buffer.from(imageRes.data);
 
     await sock.sendMessage(from, {
       image: buffer,
-      caption: `Generated: ${prompt}`
+      caption: `🎨 *Generated Image*\n_${revised || prompt}_`
     });
 
   } catch (err) {
-    console.error('Image Gen Error:', err.message);
-    await sock.sendMessage(from, { text: 'Failed to generate image. Check your API key or usage limits.' });
+    console.error('[ImageGen Error]', err.response?.data || err.message);
+    const msg = err.response?.data?.error?.message || err.message;
+    await sock.sendMessage(from, {
+      text: `❌ Image generation failed: ${msg}`
+    });
   }
 }
 

@@ -2,47 +2,63 @@ const { downloadWithYtDlp } = require('../utils/downloader');
 const fs = require('fs-extra');
 
 /**
- * Social Media Media Downloader Handler
- * Supports TikTok, Instagram, X, YouTube
+ * Social Media Downloader Handler
+ * Supports TikTok, Instagram, X, YouTube, Facebook, Snapchat
+ * Uses yt-dlp under the hood — no API key required.
  */
 async function handleSocialDownload(sock, from, url, type = 'video') {
   if (!url || !url.startsWith('http')) {
-    return sock.sendMessage(from, { text: 'Please provide a valid link. Example: !tt https://tiktok.com/...' });
+    return sock.sendMessage(from, {
+      text: '❌ Please provide a valid link.\nExample: *!tt https://www.tiktok.com/...*'
+    });
   }
 
-  await sock.sendMessage(from, { text: `📥 Fetching ${type} from link... please wait.` });
+  await sock.sendMessage(from, { text: `📥 Fetching ${type === 'audio' ? 'audio' : 'video'} from link... please wait ⏳` });
 
+  let result = null;
   try {
-    const formatOptions = type === 'audio' 
-      ? '-x --audio-format mp3' 
-      : '-f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" --merge-output-format mp4';
+    const formatOptions = type === 'audio'
+      ? '-x --audio-format mp3 --audio-quality 0'
+      : '-f "bestvideo[ext=mp4][filesize<50M]+bestaudio[ext=m4a]/best[ext=mp4][filesize<50M]/best" --merge-output-format mp4';
 
-    const result = await downloadWithYtDlp(url, formatOptions);
+    result = await downloadWithYtDlp(url, formatOptions);
 
-    if (!result) {
-      return sock.sendMessage(from, { text: '❌ Failed to download. The link might be private or unsupported.' });
+    if (!result || !fs.existsSync(result.filePath)) {
+      return sock.sendMessage(from, {
+        text: '❌ Download failed. The link might be private, age-restricted, or unsupported.'
+      });
     }
+
+    const stat = fs.statSync(result.filePath);
+    if (stat.size > 64 * 1024 * 1024) {
+      return sock.sendMessage(from, { text: '⚠️ File too large for WhatsApp (>64MB). Try a shorter clip.' });
+    }
+
+    // Read into buffer — Baileys requires buffers for local files, not file:// paths
+    const buffer = fs.readFileSync(result.filePath);
 
     if (type === 'audio') {
-      await sock.sendMessage(from, { 
-        audio: { url: result.filePath }, 
-        mimetype: 'audio/mp4',
-        ptt: false 
+      await sock.sendMessage(from, {
+        audio: buffer,
+        mimetype: 'audio/mpeg',
+        ptt: false
       });
     } else {
-      await sock.sendMessage(from, { 
-        video: { url: result.filePath }, 
-        caption: `Downloaded via @MyBot`,
-        mimetype: 'video/mp4'
+      await sock.sendMessage(from, {
+        video: buffer,
+        mimetype: 'video/mp4',
+        caption: `✅ Downloaded successfully`
       });
     }
 
-    // Cleanup
-    if (fs.existsSync(result.filePath)) fs.removeSync(result.filePath);
-
   } catch (err) {
-    console.error('Social Download Error:', err.message);
-    await sock.sendMessage(from, { text: '❌ Error processing your request.' });
+    console.error('[SocialDL Error]', err.message);
+    await sock.sendMessage(from, { text: '❌ An error occurred while processing your request.' });
+  } finally {
+    // Always clean up the temp file
+    if (result?.filePath && fs.existsSync(result.filePath)) {
+      fs.removeSync(result.filePath);
+    }
   }
 }
 

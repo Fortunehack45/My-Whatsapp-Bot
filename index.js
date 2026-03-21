@@ -6,13 +6,19 @@ const {
   default: makeWASocket,
   useMultiFileAuthState,
   DisconnectReason,
-  fetchLatestBaileysVersion
+  fetchLatestBaileysVersion,
+  makeCacheableSignalKeyStore,
+  Browsers
 } = require('@whiskeysockets/baileys');
 const { Boom } = require('@hapi/boom');
-const qrcode = require('qrcode-terminal');
+const pino = require('pino');
 const config = require('./config');
 const { handleMessage } = require('./commands/router');
 const { autoViewStatus } = require('./commands/statusViewer');
+
+// Phone number used for pairing (from .env, digits only, no symbols or spaces)
+// e.g. PAIRING_NUMBER=2348012345678
+const PAIRING_NUMBER = (process.env.PAIRING_NUMBER || '').replace(/[^0-9]/g, '');
 
 // Ensure required directories exist at startup
 fs.ensureDirSync('auth_info_baileys');
@@ -28,20 +34,48 @@ async function startBot() {
 
   const sock = makeWASocket({
     version,
-    auth: state,
-    printQRInTerminal: false,
-    browser: ['WhatsApp Bot', 'Chrome', '1.0.0'],
-    // Keep connection alive even on slow networks
+    auth: {
+      creds: state.creds,
+      keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' }))
+    },
+    printQRInTerminal: false,  // We use pairing code — no QR
+    browser: Browsers.ubuntu('Chrome'),
     keepAliveIntervalMs: 10_000,
     connectTimeoutMs: 60_000,
     defaultQueryTimeoutMs: 60_000,
+    generateHighQualityLinkPreview: true,
   });
 
-
-  sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
-    if (qr) {
-      console.log('\n📱 Scan the QR code below with WhatsApp:\n');
-      qrcode.generate(qr, { small: true });
+  // ── PHONE NUMBER PAIRING CODE ──────────────────────────────────
+  // Request a pairing code if not yet registered
+  sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr, isNewLogin }) => {
+    // If not yet linked, request a pairing code using the phone number
+    if (qr || (!state.creds.registered && !sock._pairingRequested)) {
+      sock._pairingRequested = true;
+      if (!PAIRING_NUMBER) {
+        console.error('\n❌ ERROR: PAIRING_NUMBER not set in .env!');
+        console.error('Add PAIRING_NUMBER=your_phone_number (digits only) to your .env and restart.\n');
+        process.exit(1);
+      }
+      try {
+        // Small delay to ensure socket is ready
+        await new Promise(r => setTimeout(r, 3000));
+        const code = await sock.requestPairingCode(PAIRING_NUMBER);
+        console.log('\n' + '═'.repeat(50));
+        console.log('📲  WHATSAPP PAIRING CODE');
+        console.log('═'.repeat(50));
+        console.log(`  🔑  Code: ${code}`);
+        console.log('═'.repeat(50));
+        console.log('  1. Open WhatsApp on your phone');
+        console.log('  2. Tap ⋮ Menu → Linked Devices');
+        console.log('  3. Tap "Link with phone number"');
+        console.log(`  4. Enter your number: ${PAIRING_NUMBER}`);
+        console.log('  5. Enter the code above when prompted');
+        console.log('═'.repeat(50) + '\n');
+      } catch (err) {
+        console.error('❌ Failed to get pairing code:', err.message);
+        console.error('   Make sure PAIRING_NUMBER is correct and try again.');
+      }
     }
 
     if (connection === 'close') {
