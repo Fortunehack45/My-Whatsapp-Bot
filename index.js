@@ -6,8 +6,7 @@ const {
   default: makeWASocket,
   useMultiFileAuthState,
   DisconnectReason,
-  fetchLatestBaileysVersion,
-  makeInMemoryStore
+  fetchLatestBaileysVersion
 } = require('@whiskeysockets/baileys');
 const { Boom } = require('@hapi/boom');
 const qrcode = require('qrcode-terminal');
@@ -19,7 +18,6 @@ const { autoViewStatus } = require('./commands/statusViewer');
 fs.ensureDirSync('auth_info_baileys');
 fs.ensureDirSync('saved_media');
 
-const store = makeInMemoryStore({});
 const statusStore = {};
 
 let alwaysOnlineInterval = null; // Reference so we can clear it on reconnect
@@ -39,7 +37,6 @@ async function startBot() {
     defaultQueryTimeoutMs: 60_000,
   });
 
-  store.bind(sock.ev);
 
   sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
     if (qr) {
@@ -122,7 +119,7 @@ async function startBot() {
 
       if (!msg.message) continue;
       try {
-        await handleMessage(sock, msg, store, statusStore);
+        await handleMessage(sock, msg, null, statusStore);
       } catch (err) {
         console.error('[Router Error]', err.message);
       }
