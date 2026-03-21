@@ -38,9 +38,9 @@ async function startBot() {
       creds: state.creds,
       keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' }))
     },
-    printQRInTerminal: false,
-    mobile: false, // Must be false for pairing code
-    browser: ['Mac OS', 'Safari', '14.0.0'], // Mac OS Safari bypass
+    printQRInTerminal: !PAIRING_NUMBER, // Enable QR if no pairing number is set
+    mobile: false, 
+    browser: ['Mac OS', 'Safari', '14.0.0'],
     keepAliveIntervalMs: 10_000,
     connectTimeoutMs: 60_000,
     defaultQueryTimeoutMs: 60_000,
@@ -49,17 +49,16 @@ async function startBot() {
     markOnlineOnConnect: true
   });
 
-  // ── PHONE NUMBER PAIRING CODE ──────────────────────────────────
-  // Request a pairing code if not yet registered
+  // ── AUTHENTICATION FLOW ─────────────────────────────────────────
   sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr, isNewLogin }) => {
-    // If not yet linked, request a pairing code using the phone number
-    if (qr || (!state.creds.registered && !sock._pairingRequested)) {
+    // 1. QR Code Flow (Fallback)
+    if (qr && !PAIRING_NUMBER) {
+       console.log('\n📱 Scan the QR code above with your WhatsApp to connect!\n');
+    }
+
+    // 2. Pairing Code Flow
+    if (qr && PAIRING_NUMBER && !state.creds.registered && !sock._pairingRequested) {
       sock._pairingRequested = true;
-      if (!PAIRING_NUMBER) {
-        console.error('\n❌ ERROR: PAIRING_NUMBER not set in .env!');
-        console.error('Add PAIRING_NUMBER=your_phone_number (digits only) to your .env and restart.\n');
-        process.exit(1);
-      }
       try {
         // Small delay to ensure socket is ready
         await new Promise(r => setTimeout(r, 3000));
