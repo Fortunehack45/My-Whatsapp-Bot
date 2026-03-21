@@ -28,20 +28,20 @@ fs.ensureDirSync('saved_media');
 
 const statusStore = {};
 
-let alwaysOnlineInterval = null; // Reference so we can clear it on reconnect
-
-// GLOBAL ERROR HANDLER (Catch silent crashes)
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('❌ UNHANDLED REJECTION:', reason);
-});
-process.on('uncaughtException', (err) => {
-    console.error('❌ UNCAUGHT EXCEPTION:', err);
-});
+let sock = null; // Global reference to prevent multiple socket instances
 
 async function startBot() {
+  // Prevent multiple instances if startBot is called multiple times rapidly
+  if (sock) {
+    console.log('[HEARTBEAT] Socket already exists. Cleaning up before restart...');
+    sock.ev.removeAllListeners();
+    sock.ws.close();
+    sock = null;
+  }
+
   console.log('\n[HEARTBEAT] 1. startBot() triggered.');
   console.log('───────────────────────────────────────');
-  console.log('🔄 STARTING BOT (Dual-Login Enabled)');
+  console.log('🔄 STARTING BOT (Improved Handshake)');
   
   if (PAIRING_NUMBER) {
     console.log(`📱 Pairing Number detected: ${PAIRING_NUMBER}`);
@@ -66,16 +66,16 @@ async function startBot() {
   // Updated version to a more recent stable build
   const version = [2, 3000, 1017531202]; 
 
-  const sock = makeWASocket({
+  sock = makeWASocket({
     version,
     auth: {
       creds: state.creds,
       keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' }))
     },
-    printQRInTerminal: false, // We handle QR manually below
+    printQRInTerminal: false,
     mobile: false, 
     browser: Browsers.ubuntu('Chrome'),
-    keepAliveIntervalMs: 10_000,
+    keepAliveIntervalMs: 20_000,
     connectTimeoutMs: 60_000,
     defaultQueryTimeoutMs: 60_000,
     generateHighQualityLinkPreview: true,
@@ -90,37 +90,42 @@ async function startBot() {
   sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
     // 1. Handle QR Code
     if (qr) {
-       console.log('\n[HEARTBEAT] New QR Code received.');
-       qrcode.generate(qr, { small: true });
+       console.log('\n' + '█'.repeat(40));
+       console.log('📱  THE ULTIMATE SCAN METHOD (STABLE)');
        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`;
-       console.log('📡 QR LINK (Scan here if terminal fails): ' + qrUrl + '\n');
+       console.log('🔗  CLICK THIS LINK TO SCAN:');
+       console.log('📡  ' + qrUrl);
+       console.log('█'.repeat(40) + '\n');
+       qrcode.generate(qr, { small: true });
     }
 
-    // 2. Handle Pairing Code (Triggers as soon as we connect but aren't logged in)
+    // 2. Handle Pairing Code
     if (!state.creds.registered && PAIRING_NUMBER && !pairingRequestSent) {
       pairingRequestSent = true; 
       console.log(`📡 Detected unlinked session. Requesting code for ${PAIRING_NUMBER}...`);
       
-      // Short 1s delay to let the socket finish its internal handshake
+      // Short 2s delay
       setTimeout(async () => {
         try {
-          console.log(`🚀 Sending Pairing Code request now...`);
-          const code = await sock.requestPairingCode(PAIRING_NUMBER);
-          console.log('\n' + '═'.repeat(50));
-          console.log('📲  WHATSAPP PAIRING CODE: ' + code);
-          console.log('═'.repeat(50));
-          console.log('  1. Open WhatsApp on your phone');
-          console.log('  2. Tap ⋮ Menu → Linked Devices');
-          console.log('  3. Tap "Link with phone number"');
-          console.log(`  4. Enter your number: ${PAIRING_NUMBER}`);
-          console.log('  5. Enter the code above when prompted');
-          console.log('═'.repeat(50) + '\n');
+          if (sock) {
+            console.log(`🚀 Sending Pairing Code request now...`);
+            const code = await sock.requestPairingCode(PAIRING_NUMBER);
+            console.log('\n' + '═'.repeat(50));
+            console.log('📲  WHATSAPP PAIRING CODE: ' + code);
+            console.log('═'.repeat(50));
+            console.log('  1. Open WhatsApp on your phone');
+            console.log('  2. Tap ⋮ Menu → Linked Devices');
+            console.log('  3. Tap "Link with phone number"');
+            console.log(`  4. Enter your number: ${PAIRING_NUMBER}`);
+            console.log('  5. Enter the code above when prompted');
+            console.log('═'.repeat(50) + '\n');
+          }
         } catch (err) {
           console.log('❌ ERROR requesting Pairing Code:');
           console.error(err.message || err);
-          pairingRequestSent = false; // Reset so it can try again on next reconnect
+          pairingRequestSent = false; 
         }
-      }, 1500); 
+      }, 2000); 
     }
 
     if (connection === 'close') {
