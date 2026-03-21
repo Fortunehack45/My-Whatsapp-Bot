@@ -82,17 +82,21 @@ async function startBot() {
     }
 
     // 2. Pairing Code Flow
-    if (qr && PAIRING_NUMBER && !state.creds.registered && !sock._pairingRequested) {
+    if (qr && !state.creds.registered && !sock._pairingRequested) {
+      if (!PAIRING_NUMBER) {
+        console.log('ℹ️  Pairing Code skipped: PAIRING_NUMBER is not set in environment.');
+        sock._pairingRequested = true; // Don't log this again
+        return;
+      }
+
+      console.log(`📡 Preparing to request Pairing Code for ${PAIRING_NUMBER}...`);
       sock._pairingRequested = true;
       try {
-        // Increased delay to ensure socket is fully registered before requesting code
         await new Promise(r => setTimeout(r, 6000));
-        console.log(`📡 Requesting Pairing Code for: ${PAIRING_NUMBER}...`);
+        console.log(`🚀 Sending Pairing Code request to WhatsApp servers...`);
         const code = await sock.requestPairingCode(PAIRING_NUMBER);
         console.log('\n' + '═'.repeat(50));
-        console.log('📲  WHATSAPP PAIRING CODE');
-        console.log('═'.repeat(50));
-        console.log(`  🔑  Code: ${code}`);
+        console.log('📲  WHATSAPP PAIRING CODE: ' + code);
         console.log('═'.repeat(50));
         console.log('  1. Open WhatsApp on your phone');
         console.log('  2. Tap ⋮ Menu → Linked Devices');
@@ -101,8 +105,9 @@ async function startBot() {
         console.log('  5. Enter the code above when prompted');
         console.log('═'.repeat(50) + '\n');
       } catch (err) {
-        console.error('❌ Failed to get pairing code:', err.message);
-        console.error('   Make sure PAIRING_NUMBER is correct and try again.');
+        console.log('❌ CRITICAL ERROR requesting Pairing Code:');
+        console.error(err);
+        console.log('💡 Tip: If you see "Forbidden", your account might be restricted from pairing codes. Try QR instead.');
       }
     }
 
