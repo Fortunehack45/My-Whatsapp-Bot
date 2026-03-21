@@ -1,214 +1,141 @@
 <div align="center">
 
-# 🤖 Fortune's WhatsApp Bot
+# 🤖 Fortune's WhatsApp Bot (V2)
 
-**A powerful, AI-packed WhatsApp bot built with Node.js & Baileys**
+**A professional, AI-powered WhatsApp automation suite built for reliability and performance.**
 
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green?style=flat-square&logo=node.js)](https://nodejs.org/)
-[![Railway](https://img.shields.io/badge/Deploy-Railway-blueviolet?style=flat-square&logo=railway)](https://railway.app)
+[![Node.js](https://img.shields.io/badge/Node.js-22+-green?style=flat-square&logo=node.js)](https://nodejs.org/)
+[![Render](https://img.shields.io/badge/Deploy-Render-00d1b2?style=flat-square&logo=render)](https://render.com)
 [![GitHub](https://img.shields.io/badge/GitHub-Fortunehack45-black?style=flat-square&logo=github)](https://github.com/Fortunehack45/My-Whatsapp-Bot)
 
-*Created by **Fortune Esho***
+*Developed by **Fortune Esho***
 
 </div>
 
 ---
 
-## ✨ Features
+## 🌟 Overview
 
-| Category | Features |
+This bot is a comprehensive WhatsApp automation tool that integrates multiple cutting-edge AI models, social media downloaders, and account utility features. It is specifically optimized for stable deployment on **Render** using a custom Docker environment.
+
+---
+
+## ✨ Key Features
+
+| Category | Description |
 |---|---|
-| 🤖 **Multi-AI** | Gemini, GPT-4o, Claude 3.5, Grok, Kimi, DeepSeek |
-| 🌐 **Internet AI** | Gemini with Google Search grounding (real-time answers) |
-| 🖼️ **Multimodal AI** | Ask AI about photos, voice notes, videos, and documents |
-| 🎨 **Image Gen** | AI image generation via DALL-E |
-| 🎥 **Social Downloads** | TikTok, Instagram, YouTube, Facebook, Snapchat, X/Twitter |
-| 🎵 **Media** | Download MP3/MP4 by name (YouTube search) |
-| 🔓 **View-Once Unlock** | Auto-decrypts and saves view-once messages |
-| 📺 **Status Tools** | Auto-view, auto-like ❤️, and forward statuses |
-| 🟢 **Always Online** | Bot keeps your account Online 24/7 |
-| 🛡️ **Anti-Ban** | Human-like delays, typing indicators, rate limiting |
-| 🏷️ **Group Tools** | Mention/tag all members |
+| 🤖 **Multi-AI Engine** | Integrated with Gemini, GPT-4o, Claude 3.5, Grok, Kimi, and DeepSeek. |
+| 🌐 **Live Web AI** | Google Gemini integration with real-time "Search Grounding" for up-to-date facts. |
+| 🎞️ **Media Analysis** | Send an image, video, or voice note to the bot — the AI can "see" and "hear" it! |
+| 🎨 **DALL-E 3** | Generate high-quality artistic images directly in the chat via `!draw`. |
+| 🎥 **Universal DL** | Premium download support for TikTok, Instagram Reels, YouTube, Facebook, and more. |
+| 🎵 **Search & Play** | High-speed MP3/MP4 conversion from YouTube via `!song` and `!video`. |
+| 🔓 **View-Once Hack** | Automatically decodes "View Once" media and saves it to the bot's media cache. |
+| 📺 **Status Suite** | Automatic viewing, auto-liking (❤️), and owner-status forwarding. |
+| 🛡️ **Stealth Mode** | Anti-ban technology using human-like typing delays and browser signature rotation. |
 
 ---
 
-## 📋 Commands
+## 🚀 One-Click Deployment (Recommended)
 
-### 🤖 AI Models
-```
-!ask <question>      — Chat with AI (default model)
-!gemini <question>   — Google Gemini (with internet)
-!gpt <question>      — ChatGPT-4o
-!claude <question>   — Anthropic Claude 3.5
-!grok <question>     — xAI Grok
-!kimi <question>     — Kimi (Moonshot AI)
-!deepseek <question> — DeepSeek Chat
-!draw <description>  — Generate an AI image
-```
-> 📎 **Tip:** Send a photo/voice note/video with your question — Gemini will analyze it!
+### 1. Prerequisites
+- A **GitHub** account.
+- A **Render** account.
+- A **secondary WhatsApp number** (Recommended to avoid banning your main account).
+- API Keys from [Google AI Studio](https://aistudio.google.com/) (Free) and others.
 
-### 🎥 Social Media Downloaders
+### 2. Setup on Render
+1. **Fork this repository** to your own GitHub account.
+2. Go to your **[Render Dashboard](https://dashboard.render.com/)**.
+3. Click **New +** → **Blueprint**.
+4. Select your fork of `My-Whatsapp-Bot`.
+5. Render will automatically detect the `render.yaml` file.
+6. Fill in the **Environment Variables**:
+   - `OWNER_NUMBER`: Your ID (e.g., `2348123456789@s.whatsapp.net`).
+   - `PAIRING_NUMBER`: The bot's phone number (e.g., `2348123456789`).
+   - `GEMINI_API_KEY`: Your key from Google.
+7. Click **Apply**.
+
+### 3. Connection (Pairing Code)
+1. Wait for the build to finish (Status: **Live**).
+2. Go to the **Logs** tab in Render.
+3. You will see an **8-character Pairing Code** (e.g., `ABCD-1234`).
+4. On your phone: WhatsApp → Linked Devices → **Link with phone number**.
+5. Type the code from the logs. **Connection complete!**
+
+---
+
+## 🎮 Commands
+
+### 🤖 Artificial Intelligence
+```bash
+!ask <text>      # Default AI Chat (Gemini)
+!gemini <text>   # Gemini Pro with Internet Search
+!gpt <text>      # ChatGPT-4o-mini
+!claude <text>   # Anthropic Claude 3.5 Sonnet
+!draw <prompt>   # DALL-E 3 Image Generation
 ```
-!tt  <link>  — TikTok
-!ig  <link>  — Instagram
-!yt  <link>  — YouTube
-!tw  <link>  — X / Twitter
-!fb  <link>  — Facebook
-!sc  <link>  — Snapchat
-!dl  <link>  — Auto-detect platform
+> **Pro Tip:** Tag an image/video/audio while using `!ask` to let the AI analyze it!
+
+### 📥 Media Downloaders
+```bash
+!tt <link>       # TikTok (No Watermark)
+!ig <link>       # Instagram Reels/Posts
+!yt <link>       # YouTube Video
+!song <name>     # Download Music by Search Name
+!video <name>    # Download Video by Search Name
 ```
 
-### 🎵 Music & Video (by name)
-```
-!song  <name>  — Download as MP3
-!video <name>  — Download as MP4
-```
-
-### 🔧 Utilities
-```
-!help           — Show this command menu
-!tag            — Mention everyone in a group
-!once           — Re-send last decrypted view-once
-!status         — Get owner's latest status
+### 🛠️ Group & Utilities
+```bash
+!tag             # Tag everyone in the group
+!help            # Full command menu
+!once            # View the last decrypted View-Once message
 ```
 
 ---
 
-## 🚀 Deploy to Railway
+## 🛠️ Local Development
 
-### Prerequisites
-- [Node.js 18+](https://nodejs.org/) (local only)
-- [Git](https://git-scm.com/)
-- [GitHub](https://github.com) account
-- [Railway](https://railway.app) account (sign in with GitHub)
-- A **secondary WhatsApp number** for the bot
-
-### Step 1 — Get API Keys
-
-| Key | Get It From |
-|---|---|
-| `GEMINI_API_KEY` | [aistudio.google.com](https://aistudio.google.com) |
-| `OPENAI_API_KEY` | [platform.openai.com](https://platform.openai.com) |
-| `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com) |
-| `XAI_API_KEY` | [console.x.ai](https://console.x.ai) |
-| `DEEPSEEK_API_KEY` | [platform.deepseek.com](https://platform.deepseek.com) |
-| `KIMI_API_KEY` | [platform.moonshot.cn](https://platform.moonshot.cn) |
-
-### Step 2 — Deploy on Railway
-
-1. Go to [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo**
-2. Select **`My-Whatsapp-Bot`**
-3. Click **Variables** and add:
-
-```env
-OWNER_NUMBER=2348012345678@s.whatsapp.net
-GEMINI_API_KEY=your_key_here
-OPENAI_API_KEY=your_key_here
-ANTHROPIC_API_KEY=your_key_here
-XAI_API_KEY=your_key_here
-DEEPSEEK_API_KEY=your_key_here
-KIMI_API_KEY=your_key_here
-```
-
-> ⚠️ Use your **country code + number** without `+` for `OWNER_NUMBER`  
-> ⚠️ **Do NOT add `PORT`** — Railway sets it automatically
-
-4. Wait for the build to finish (~2–3 min)
-5. Open **Deploy Logs** — scan the QR code with WhatsApp on your second phone
-6. You'll see `✅ Bot connected successfully!` — you're live! 🎉
-
----
-
-## 🔧 Local Setup
+If you prefer to run the bot on your own computer:
 
 ```bash
-# Clone the repo
+# Clone and Install
 git clone https://github.com/Fortunehack45/My-Whatsapp-Bot.git
 cd My-Whatsapp-Bot
-
-# Install dependencies
 npm install
 
-# Fill in your .env file
-notepad .env
-
-# Run the bot
+# Configuration
+# Copy values from .env.example (if present) or create a .env file
+# Run
 npm start
 ```
 
-> Scan the QR code in the terminal with WhatsApp → Bot is running locally.
+---
+
+## ⚙️ Advanced Configuration (`config.js`)
+
+Edit `config.js` to change global behavior:
+- `PREFIX`: Command symbol (default: `!`).
+- `AUTO_VIEW_STATUS`: Marks all status updates as read.
+- `AI_DAILY_LIMIT`: Max AI interactions per user per day.
+- `SAVE_VIEW_ONCE`: Decrypts and saves view-once media.
 
 ---
 
-## ⚙️ Configuration (`config.js`)
-
-```js
-PREFIX: '!'           // Command prefix
-DEFAULT_AI_MODEL: 'gemini' // Default AI model
-AUTO_AI: false        // Auto-reply in DMs with AI
-AUTO_REPLY: true      // Keyword-based auto replies
-SAVE_VIEW_ONCE: true  // Auto-decrypt view-once
-AUTO_VIEW_STATUS: true // Auto-view & like statuses
-AI_DAILY_LIMIT: 10    // AI messages per user/day
-IMG_DAILY_LIMIT: 5    // Image gen per user/day
-```
+## 📦 Technical Architecture
+- **Engine**: `@whiskeysockets/baileys` (Stable v6).
+- **Runtime**: Node.js 22 (LTS).
+- **Dependencies**: `yt-dlp`, `ffmpeg`, `python3` (Managed via Docker).
+- **Auth**: Multi-file state storage (`auth_info_baileys/`).
 
 ---
 
-## 🛡️ Anti-Ban Protection
-
-The bot includes automatic protections so WhatsApp won't flag your account:
-
-- ✅ **Human delays** — Random 0.8–2.5 second pause before every response
-- ✅ **Typing indicator** — Shows "typing..." before replying
-- ✅ **Mark as read** — Marks messages seen before responding
-- ✅ **Per-user rate limit** — 1 request per user per 5 seconds
-- ✅ **Safe reconnect** — 3-second wait before reconnecting after drops
-
-**Best practices (your side):**
-- Use a secondary number, not your main account
-- Don't add the bot to too many groups at once
-- Don't use `!tag` too frequently in large groups
+## 📄 License & Credits
+- **License**: MIT
+- **Credit**: Made with ❤️ by **Fortune Esho**.
 
 ---
-
-## 📦 Tech Stack
-
-| Library | Purpose |
-|---|---|
-| `@whiskeysockets/baileys` | WhatsApp Web API |
-| `axios` | HTTP requests to AI APIs |
-| `fs-extra` | Enhanced file system operations |
-| `dotenv` | Environment variable management |
-| `qrcode-terminal` | QR code display in terminal |
-| `yt-dlp` *(system)* | Video/audio downloading |
-| `ffmpeg` *(system)* | Media processing |
-
----
-
-## 🐛 Troubleshooting
-
-| Problem | Solution |
-|---|---|
-| QR not showing | Wait for build to finish. Check logs. |
-| Bot not responding | Verify `OWNER_NUMBER` format is correct |
-| AI not working | Check API key has credits and is valid |
-| Download fails | `yt-dlp` installs on first deploy, wait ~1 min |
-| Bot disconnects | Reconnects automatically — check logs |
-| Logged out | Delete `auth_info_baileys/`, redeploy, rescan QR |
-
----
-
-## 📄 License
-
-MIT — Free to use, modify, and share.
-
----
-
 <div align="center">
-
-**Made with ❤️ by Fortune Esho**
-
-⭐ Star this repo if you found it useful!
-
+⭐ Star this repo if you find it helpful!
 </div>
