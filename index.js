@@ -31,30 +31,32 @@ const statusStore = {};
 let alwaysOnlineInterval = null; // Reference so we can clear it on reconnect
 
 async function startBot() {
+  console.log('\n[HEARTBEAT] 1. startBot() triggered.');
   console.log('───────────────────────────────────────');
   console.log('🔄 STARTING BOT (Dual-Login Enabled)');
+  
   if (PAIRING_NUMBER) {
     console.log(`📱 Pairing Number detected: ${PAIRING_NUMBER}`);
   } else {
-    console.log('⚠️  WARNING: PAIRING_NUMBER not found in environment variables.');
-    console.log('   Bot will only show QR Code. Set PAIRING_NUMBER to use Link with Phone Number.');
+    console.log('⚠️  WARNING: PAIRING_NUMBER not found.');
   }
   
+  console.log('[HEARTBEAT] 2. Initializing Auth State...');
   // 1. Initialize Auth State
   const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
 
-  // 2. Force Reset or Aggressive Cleanup: If not registered, wipe EVERYTHING in auth folder to ensure a clean start
+  // 2. Force Reset or Aggressive Cleanup
   if (!state.creds.registered || process.env.FORCE_RESET === 'true') {
-    console.log('🧹 Clearing session files for a fresh start...');
+    console.log('[HEARTBEAT] 3. Wiping session (Fresh Start)...');
     fs.emptyDirSync('auth_info_baileys');
-    // Re-init state after wiping folder
     const freshAuth = await useMultiFileAuthState('auth_info_baileys');
     state.creds = freshAuth.state.creds;
     state.keys = freshAuth.state.keys;
   }
-  console.log('───────────────────────────────────────');
-
-  const { version } = await fetchLatestBaileysVersion();
+  
+  console.log('[HEARTBEAT] 4. Creating Socket...');
+  // Hardcoded version to avoid network timeouts at startup
+  const version = [2, 3000, 1015901307]; 
 
   const sock = makeWASocket({
     version,
