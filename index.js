@@ -33,7 +33,12 @@ let alwaysOnlineInterval = null; // Reference so we can clear it on reconnect
 async function startBot() {
   console.log('───────────────────────────────────────');
   console.log('🔄 STARTING BOT (Dual-Login Enabled)');
-  if (PAIRING_NUMBER) console.log(`📱 Pairing Number: ${PAIRING_NUMBER}`);
+  if (PAIRING_NUMBER) {
+    console.log(`📱 Pairing Number detected: ${PAIRING_NUMBER}`);
+  } else {
+    console.log('⚠️  WARNING: PAIRING_NUMBER not found in environment variables.');
+    console.log('   Bot will only show QR Code. Set PAIRING_NUMBER to use Link with Phone Number.');
+  }
   
   // 1. Initialize Auth State
   const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
