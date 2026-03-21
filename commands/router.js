@@ -170,6 +170,39 @@ async function handleMessage(sock, msg, store, statusStore) {
       return sock.sendMessage(from, { text: '🔄 All user usage limits have been reset!' });
     }
 
+    if (command === 'fix' || command === 'debug') {
+      const { execSync } = require('child_process');
+      let report = '🛠️ *BOT DIAGNOSTICS*\n\n';
+      
+      // Check yt-dlp
+      try {
+        execSync('yt-dlp --version');
+        report += '✅ *yt-dlp:* Installed\n';
+      } catch (e) {
+        report += '❌ *yt-dlp:* NOT FOUND (Downloads will fail)\n';
+      }
+
+      // Check ffmpeg
+      try {
+        execSync('ffmpeg -version');
+        report += '✅ *ffmpeg:* Installed\n';
+      } catch (e) {
+        report += '❌ *ffmpeg:* NOT FOUND (Media conversion will fail)\n';
+      }
+
+      // Check API Keys (presence only)
+      report += `🔑 *Gemini API:* ${process.env.GEMINI_API_KEY ? '✅ Configured' : '❌ MISSING'}\n`;
+      report += `🔑 *OpenAI API:* ${process.env.OPENAI_API_KEY ? '✅ Configured' : '⚪ Optional'}\n`;
+      
+      // Check Owner
+      const isUserOwner = isOwner(from) || isOwner(msg.key.participant || from);
+      report += `👤 *You are Owner:* ${isUserOwner ? '✅ Yes' : '⚪ No'}\n`;
+      
+      report += '\n💡 *Tip:* If tools are missing, ensure you deployed using the **"Blueprint"** method on Render.';
+      
+      return sock.sendMessage(from, { text: report });
+    }
+
     return; // Unknown command — ignore
   }
 
