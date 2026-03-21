@@ -30,6 +30,17 @@ const statusStore = {};
 let alwaysOnlineInterval = null; // Reference so we can clear it on reconnect
 
 async function startBot() {
+  console.log('───────────────────────────────────────');
+  if (PAIRING_NUMBER) {
+    console.log('🔄 STARTING BOT IN PAIRING CODE MODE');
+    console.log(`📱 Target Number: ${PAIRING_NUMBER}`);
+  } else {
+    console.log('🔄 STARTING BOT IN QR CODE MODE');
+    console.log('🧹 Clearing old auth state to force new QR generation...');
+    fs.emptyDirSync('auth_info_baileys'); // Force clean state for QR
+  }
+  console.log('───────────────────────────────────────');
+
   const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
   const { version } = await fetchLatestBaileysVersion();
 
