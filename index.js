@@ -77,7 +77,7 @@ async function startBot() {
     }
 
     // 2. Pairing Code Flow
-    if (qr && PAIRING_NUMBER && !newState.creds.registered && !sock._pairingRequested) {
+    if (qr && PAIRING_NUMBER && !state.creds.registered && !sock._pairingRequested) {
       sock._pairingRequested = true;
       try {
         // Small delay to ensure socket is ready
