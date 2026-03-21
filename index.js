@@ -64,7 +64,7 @@ async function startBot() {
     },
     printQRInTerminal: true, // Always show QR as a backup
     mobile: false, 
-    browser: Browsers.macOS('Desktop'),
+    browser: ["Chrome (Android)", "Chrome", "1.0.0"],
     keepAliveIntervalMs: 10_000,
     connectTimeoutMs: 60_000,
     defaultQueryTimeoutMs: 60_000,
@@ -87,6 +87,7 @@ async function startBot() {
       try {
         // Increased delay to ensure socket is fully registered before requesting code
         await new Promise(r => setTimeout(r, 6000));
+        console.log(`📡 Requesting Pairing Code for: ${PAIRING_NUMBER}...`);
         const code = await sock.requestPairingCode(PAIRING_NUMBER);
         console.log('\n' + '═'.repeat(50));
         console.log('📲  WHATSAPP PAIRING CODE');
