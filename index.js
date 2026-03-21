@@ -17,8 +17,9 @@ const config = require('./config');
 const { handleMessage } = require('./commands/router');
 const { autoViewStatus } = require('./commands/statusViewer');
 
-// We are forcing QR code mode because pairing code is being rejected.
-const PAIRING_NUMBER = '';
+// Phone number used for pairing (from .env, digits only, no symbols or spaces)
+// e.g. PAIRING_NUMBER=2348012345678
+const PAIRING_NUMBER = (process.env.PAIRING_NUMBER || '').replace(/[^0-9]/g, '');
 
 // Ensure required directories exist at startup
 fs.ensureDirSync('auth_info_baileys');
@@ -51,7 +52,7 @@ async function startBot() {
     },
     printQRInTerminal: !PAIRING_NUMBER, // Enable QR if no pairing number is set
     mobile: false, 
-    browser: Browsers.ubuntu('Chrome'),
+    browser: ['Mac OS', 'Chrome', '121.0.6167.85'],
     keepAliveIntervalMs: 10_000,
     connectTimeoutMs: 60_000,
     defaultQueryTimeoutMs: 60_000,
