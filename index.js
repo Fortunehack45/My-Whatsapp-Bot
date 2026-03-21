@@ -75,15 +75,16 @@ async function startBot() {
 
   // ── AUTHENTICATION FLOW ─────────────────────────────────────────
   
-  // 3. Pairing Code Flow (Triggers immediately if not registered)
   if (!state.creds.registered) {
     if (!PAIRING_NUMBER) {
       console.log('ℹ️  Pairing Code skipped: PAIRING_NUMBER is not set in environment.');
     } else {
       console.log(`📡 Preparing to request Pairing Code for ${PAIRING_NUMBER}...`);
+      
+      // We wait for the socket to stabilize before requesting the code
       setTimeout(async () => {
         try {
-          console.log(`🚀 Sending Pairing Code request to WhatsApp servers...`);
+          console.log(`🚀 Sending Pairing Code request to WhatsApp servers for ${PAIRING_NUMBER}...`);
           const code = await sock.requestPairingCode(PAIRING_NUMBER);
           console.log('\n' + '═'.repeat(50));
           console.log('📲  WHATSAPP PAIRING CODE: ' + code);
@@ -97,9 +98,8 @@ async function startBot() {
         } catch (err) {
           console.log('❌ CRITICAL ERROR requesting Pairing Code:');
           console.error(err);
-          console.log('💡 Tip: If you see "Forbidden", your account might be restricted from pairing codes. Try QR instead.');
         }
-      }, 6000);
+      }, 10000); // 10s wait for full socket initialization
     }
   }
 
