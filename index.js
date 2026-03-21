@@ -37,15 +37,14 @@ async function startBot() {
   // 1. Initialize Auth State
   const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
 
-  // 2. Safety Cleanup: If not registered, clear stale session data once to avoid "wrong number" errors
+  // 2. Aggressive Cleanup: If not registered, wipe EVERYTHING in auth folder to ensure a clean start
   if (!state.creds.registered) {
-    console.log('🧹 Cleaning up stale/incomplete session data...');
-    // We don't want to infinite loop, so we only clear if it's the first run with this state
-    if (fs.existsSync(path.join('auth_info_baileys', 'creds.json'))) {
-       fs.emptyDirSync('auth_info_baileys');
-       // Re-init after clearing
-       return startBot(); 
-    }
+    console.log('🧹 Wiping stale session files for a clean start...');
+    fs.emptyDirSync('auth_info_baileys');
+    // Re-init state after wiping folder
+    const freshAuth = await useMultiFileAuthState('auth_info_baileys');
+    state.creds = freshAuth.state.creds;
+    state.keys = freshAuth.state.keys;
   }
   console.log('───────────────────────────────────────');
 
@@ -59,7 +58,7 @@ async function startBot() {
     },
     printQRInTerminal: true, // Always show QR as a backup
     mobile: false, 
-    browser: Browsers.ubuntu('Chrome'),
+    browser: Browsers.macOS('Desktop'),
     keepAliveIntervalMs: 10_000,
     connectTimeoutMs: 60_000,
     defaultQueryTimeoutMs: 60_000,
