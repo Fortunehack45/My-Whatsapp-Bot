@@ -19,7 +19,8 @@ const { autoViewStatus } = require('./commands/statusViewer');
 
 // Phone number used for pairing (from .env, digits only, no symbols or spaces)
 // e.g. PAIRING_NUMBER=2348012345678
-const PAIRING_NUMBER = (process.env.PAIRING_NUMBER || '').replace(/[^0-9]/g, '');
+const PAIRING_NUMBER = (process.env.PAIRING_NUMBER || '').replace(/[^0-9]/g, ''); // Digits only
+const OWNER_NUMBER = process.env.OWNER_NUMBER || config.OWNER_NUMBER;
 
 // Ensure required directories exist at startup
 fs.ensureDirSync('auth_info_baileys');
@@ -79,8 +80,8 @@ async function startBot() {
     if (qr && PAIRING_NUMBER && !state.creds.registered && !sock._pairingRequested) {
       sock._pairingRequested = true;
       try {
-        // Small delay to ensure socket is ready
-        await new Promise(r => setTimeout(r, 3000));
+        // Increased delay to ensure socket is fully registered before requesting code
+        await new Promise(r => setTimeout(r, 6000));
         const code = await sock.requestPairingCode(PAIRING_NUMBER);
         console.log('\n' + '═'.repeat(50));
         console.log('📲  WHATSAPP PAIRING CODE');
