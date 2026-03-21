@@ -63,8 +63,8 @@ async function startBot() {
   }
   
   console.log('[HEARTBEAT] 4. Creating Socket...');
-  // Hardcoded version to avoid network timeouts at startup
-  const version = [2, 3000, 1015901307]; 
+  // Updated version to a more recent stable build
+  const version = [2, 3000, 1017531202]; 
 
   const sock = makeWASocket({
     version,
@@ -72,9 +72,9 @@ async function startBot() {
       creds: state.creds,
       keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' }))
     },
-    printQRInTerminal: true, // Always show QR as a backup
+    printQRInTerminal: false, // We handle QR manually below
     mobile: false, 
-    browser: Browsers.macOS('Desktop'),
+    browser: Browsers.ubuntu('Chrome'),
     keepAliveIntervalMs: 10_000,
     connectTimeoutMs: 60_000,
     defaultQueryTimeoutMs: 60_000,
@@ -84,17 +84,27 @@ async function startBot() {
   });
 
   // ── AUTHENTICATION FLOW ─────────────────────────────────────────
-  
-  if (!state.creds.registered) {
-    if (!PAIRING_NUMBER) {
-      console.log('ℹ️  Pairing Code skipped: PAIRING_NUMBER is not set in environment.');
-    } else {
-      console.log(`📡 Preparing to request Pairing Code for ${PAIRING_NUMBER}...`);
+
+  let pairingRequestSent = false;
+
+  sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
+    // 1. Handle QR Code
+    if (qr) {
+       console.log('\n[HEARTBEAT] New QR Code received.');
+       qrcode.generate(qr, { small: true });
+       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`;
+       console.log('📡 QR LINK (Scan here if terminal fails): ' + qrUrl + '\n');
+    }
+
+    // 2. Handle Pairing Code (Triggers as soon as we connect but aren't logged in)
+    if (!state.creds.registered && PAIRING_NUMBER && !pairingRequestSent) {
+      pairingRequestSent = true; 
+      console.log(`📡 Detected unlinked session. Requesting code for ${PAIRING_NUMBER}...`);
       
-      // We trigger this much faster (3s) to beat the 405 connection close
+      // Short 1s delay to let the socket finish its internal handshake
       setTimeout(async () => {
         try {
-          console.log(`🚀 Sending Pairing Code request to WhatsApp servers for ${PAIRING_NUMBER}...`);
+          console.log(`🚀 Sending Pairing Code request now...`);
           const code = await sock.requestPairingCode(PAIRING_NUMBER);
           console.log('\n' + '═'.repeat(50));
           console.log('📲  WHATSAPP PAIRING CODE: ' + code);
@@ -108,20 +118,9 @@ async function startBot() {
         } catch (err) {
           console.log('❌ ERROR requesting Pairing Code:');
           console.error(err.message || err);
+          pairingRequestSent = false; // Reset so it can try again on next reconnect
         }
-      }, 3000); 
-    }
-  }
-
-  sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr, isNewLogin }) => {
-    if (qr) {
-       console.log('\n📱 ALTERNATIVE: Scan the QR code below if Phone Link fails:');
-       qrcode.generate(qr, { small: true });
-       
-       // NEW: Online QR Fallback (in case terminal blocks characters)
-       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`;
-       console.log('\n🔗 CAN\'T SEE THE QR? Click this link to scan from your browser:');
-       console.log(`📡 ${qrUrl}\n`);
+      }, 1500); 
     }
 
     if (connection === 'close') {
