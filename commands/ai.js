@@ -42,8 +42,8 @@ async function handleAi(sock, from, prompt, modelName = null, mediaData = null) 
 
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
       const payload = {
-        contents: [{ parts }],
-        tools: [{ google_search_retrieval: {} }] // Enable Internet Search
+        contents: [{ parts }]
+        // Removing Google Search Retrieval temporarily to fix 404 errors in some regions
       };
 
       const res = await axios.post(url, payload);
