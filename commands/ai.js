@@ -26,7 +26,9 @@ async function handleAi(sock, from, prompt, modelName = null, mediaData = null) 
     
     if (model === 'gemini') {
       const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) throw new Error('Gemini API key missing');
+      if (!apiKey || apiKey === 'your_gemini_key') {
+        throw new Error('Gemini API key is missing or set to a placeholder! Please set GEMINI_API_KEY in your Render dashboard environment variables.');
+      }
 
       const parts = [{ text: prompt || "Analyze this." }];
       if (mediaData) {

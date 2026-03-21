@@ -17,8 +17,8 @@ async function handleMessage(sock, msg, store, statusStore) {
   const from = msg.key.remoteJid;
   const isGroup = from.endsWith('@g.us');
 
-  // ── ANTI-BAN: Skip own messages and rate-limit heavy users ─────
-  if (msg.key.fromMe) return;
+  // ── ANTI-BAN: Skip own messages UNLESS it's a command from the owner ─────
+  if (msg.key.fromMe && !body.startsWith(config.PREFIX)) return;
   if (isRateLimited(from)) return; // 1 request per 5s per user
 
   // Mark message as read (human-like behavior)
@@ -42,74 +42,97 @@ async function handleMessage(sock, msg, store, statusStore) {
     const command = cmdBody.split(' ')[0].toLowerCase();
     const args = cmdBody.split(' ').slice(1).join(' ');
 
-    // 1. Help & Menu  (must be first to prevent conflicts)
+    // 1. Help & Menu
     if (['help', 'menu', 'h'].includes(command)) {
-      await simulateTyping(sock, from, 1000);
-      return await handleHelp(sock, from);
+      try {
+        await simulateTyping(sock, from, 1000);
+        return await handleHelp(sock, from);
+      } catch (e) {
+        console.error('[Help Error]', e.message);
+        return sock.sendMessage(from, { text: `❌ Help Error: ${e.message}` });
+      }
     }
 
     // 2. AI Text Commands
-    if (['ai', 'ask', 'q', 'chat'].includes(command)) {
-      await simulateTyping(sock, from, 1200);
-      return await handleAi(sock, from, args);
-    }
-    if (['gpt', 'chatgpt'].includes(command)) {
-      await simulateTyping(sock, from, 1200);
-      return await handleAi(sock, from, args, 'gpt');
-    }
-    if (['gemini', 'g'].includes(command)) {
-      await simulateTyping(sock, from, 1200);
-      return await handleAi(sock, from, args, 'gemini');
-    }
-    if (command === 'claude') {
-      await simulateTyping(sock, from, 1200);
-      return await handleAi(sock, from, args, 'claude');
-    }
-    if (['grok', 'xai'].includes(command)) {
-      await simulateTyping(sock, from, 1200);
-      return await handleAi(sock, from, args, 'grok');
-    }
-    if (['kimi', 'moonshot'].includes(command)) {
-      await simulateTyping(sock, from, 1200);
-      return await handleAi(sock, from, args, 'kimi');
-    }
-    if (command === 'deepseek') {
-      await simulateTyping(sock, from, 1200);
-      return await handleAi(sock, from, args, 'deepseek');
+    if (['ai', 'ask', 'q', 'chat', 'gpt', 'chatgpt', 'gemini', 'g', 'claude', 'grok', 'xai', 'kimi', 'moonshot', 'deepseek'].includes(command)) {
+      try {
+        const modelMap = { gpt: 'gpt', chatgpt: 'gpt', gemini: 'gemini', g: 'gemini', claude: 'claude', grok: 'grok', xai: 'grok', kimi: 'kimi', moonshot: 'kimi', deepseek: 'deepseek' };
+        const specificModel = modelMap[command] || null;
+        await simulateTyping(sock, from, 1200);
+        return await handleAi(sock, from, args, specificModel);
+      } catch (e) {
+        console.error('[AI Router Error]', e.message);
+        return sock.sendMessage(from, { text: `❌ AI Error: ${e.message}` });
+      }
     }
 
     // 3. Image Generation
     if (['draw', 'img', 'pic', 'art', 'photo', 'generate'].includes(command)) {
-      await simulateTyping(sock, from, 800);
-      return await handleImageGen(sock, from, args);
+      try {
+        await simulateTyping(sock, from, 800);
+        return await handleImageGen(sock, from, args);
+      } catch (e) {
+        console.error('[Draw Error]', e.message);
+        return sock.sendMessage(from, { text: `❌ Drawing Error: ${e.message}` });
+      }
     }
 
     // 4. Music & Video by Name
     if (['mp3', 'm', 'song', 'music', 'audio'].includes(command)) {
-      return await handleMp3(sock, from, args);
+      try {
+        return await handleMp3(sock, from, args);
+      } catch (e) {
+        console.error('[Mp3 Error]', e.message);
+        return sock.sendMessage(from, { text: `❌ Music Error: ${e.message}` });
+      }
     }
     if (['mp4', 'v', 'video', 'movie', 'vid'].includes(command)) {
-      return await handleMp4(sock, from, args);
+      try {
+        return await handleMp4(sock, from, args);
+      } catch (e) {
+        console.error('[Mp4 Error]', e.message);
+        return sock.sendMessage(from, { text: `❌ Video Error: ${e.message}` });
+      }
     }
 
     // 5. Social Media Downloader (by URL)
     if (['tiktok', 'tt', 'ig', 'insta', 'instagram', 'tw', 'x', 'twitter', 'fb', 'facebook', 'yt', 'youtube', 'sc', 'snap', 'snapchat', 'dl'].includes(command)) {
-      return await handleSocialDownload(sock, from, args);
+      try {
+        return await handleSocialDownload(sock, from, args);
+      } catch (e) {
+        console.error('[SocialDL Router Error]', e.message);
+        return sock.sendMessage(from, { text: `❌ Download Error: ${e.message}` });
+      }
     }
 
     // 6. Group Utilities
     if (['mentionall', 'tagall', 'tag', 'everyone'].includes(command)) {
-      return await handleMentionAll(sock, from, msg);
+      try {
+        return await handleMentionAll(sock, from, msg);
+      } catch (e) {
+        console.error('[Group Error]', e.message);
+        return sock.sendMessage(from, { text: `❌ Group Tool Error: ${e.message}` });
+      }
     }
 
     // 7. View-Once
     if (['once', 'vo', 'viewonce'].includes(command)) {
-      return await sendLastViewOnce(sock, from);
+      try {
+        return await sendLastViewOnce(sock, from);
+      } catch (e) {
+        console.error('[ViewOnce Error]', e.message);
+        return sock.sendMessage(from, { text: `❌ View-Once Error: ${e.message}` });
+      }
     }
 
     // 8. Status
     if (['status', 's'].includes(command)) {
-      return await sendStatusToUser(sock, from, statusStore);
+      try {
+        return await sendStatusToUser(sock, from, statusStore);
+      } catch (e) {
+        console.error('[Status Error]', e.message);
+        return sock.sendMessage(from, { text: `❌ Status Error: ${e.message}` });
+      }
     }
 
     // 9. OWNER ONLY COMMANDS

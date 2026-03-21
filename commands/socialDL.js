@@ -21,7 +21,14 @@ async function handleSocialDownload(sock, from, url, type = 'video') {
       ? '-x --audio-format mp3 --audio-quality 0'
       : '-f "bestvideo[ext=mp4][filesize<50M]+bestaudio[ext=m4a]/best[ext=mp4][filesize<50M]/best" --merge-output-format mp4';
 
-    result = await downloadWithYtDlp(url, formatOptions);
+    try {
+      result = await downloadWithYtDlp(url, formatOptions);
+    } catch (e) {
+      if (e.message.includes('NOT_FOUND') || e.message.includes('not found')) {
+        throw new Error('yt-dlp not found on system! Please ensure you deployed using the "Blueprint" (render.yaml) method on Render.');
+      }
+      throw e;
+    }
 
     if (!result || !fs.existsSync(result.filePath)) {
       return sock.sendMessage(from, {
@@ -53,7 +60,8 @@ async function handleSocialDownload(sock, from, url, type = 'video') {
 
   } catch (err) {
     console.error('[SocialDL Error]', err.message);
-    await sock.sendMessage(from, { text: '❌ An error occurred while processing your request.' });
+    const msg = err.message.includes('yt-dlp') ? err.message : '❌ Failed to process download. Link might be private or unsupported.';
+    await sock.sendMessage(from, { text: msg });
   } finally {
     // Always clean up the temp file
     if (result?.filePath && fs.existsSync(result.filePath)) {
