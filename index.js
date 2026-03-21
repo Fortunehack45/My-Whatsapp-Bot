@@ -17,9 +17,8 @@ const config = require('./config');
 const { handleMessage } = require('./commands/router');
 const { autoViewStatus } = require('./commands/statusViewer');
 
-// Phone number used for pairing (from .env, digits only, no symbols or spaces)
-// e.g. PAIRING_NUMBER=2348012345678
-const PAIRING_NUMBER = (process.env.PAIRING_NUMBER || '').replace(/[^0-9]/g, '');
+// We are forcing QR code mode because pairing code is being rejected.
+const PAIRING_NUMBER = '';
 
 // Ensure required directories exist at startup
 fs.ensureDirSync('auth_info_baileys');
