@@ -91,7 +91,7 @@ async function startBot() {
     } else {
       console.log(`📡 Preparing to request Pairing Code for ${PAIRING_NUMBER}...`);
       
-      // We wait for the socket to stabilize before requesting the code
+      // We trigger this much faster (3s) to beat the 405 connection close
       setTimeout(async () => {
         try {
           console.log(`🚀 Sending Pairing Code request to WhatsApp servers for ${PAIRING_NUMBER}...`);
@@ -106,10 +106,10 @@ async function startBot() {
           console.log('  5. Enter the code above when prompted');
           console.log('═'.repeat(50) + '\n');
         } catch (err) {
-          console.log('❌ CRITICAL ERROR requesting Pairing Code:');
-          console.error(err);
+          console.log('❌ ERROR requesting Pairing Code:');
+          console.error(err.message || err);
         }
-      }, 10000); // 10s wait for full socket initialization
+      }, 3000); 
     }
   }
 
