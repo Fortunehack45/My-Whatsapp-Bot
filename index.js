@@ -28,6 +28,7 @@ fs.ensureDirSync('saved_media');
 
 const statusStore = {};
 
+let alwaysOnlineInterval = null; // Reference so we can clear it on reconnect
 let sock = null; // Global reference to prevent multiple socket instances
 
 async function startBot() {
