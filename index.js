@@ -51,7 +51,7 @@ async function startBot() {
     },
     printQRInTerminal: !PAIRING_NUMBER, // Enable QR if no pairing number is set
     mobile: false, 
-    browser: ['Mac OS', 'Safari', '14.0.0'],
+    browser: Browsers.ubuntu('Chrome'),
     keepAliveIntervalMs: 10_000,
     connectTimeoutMs: 60_000,
     defaultQueryTimeoutMs: 60_000,
