@@ -107,6 +107,11 @@ async function startBot() {
     if (qr) {
        console.log('\n📱 ALTERNATIVE: Scan the QR code below if Phone Link fails:');
        qrcode.generate(qr, { small: true });
+       
+       // NEW: Online QR Fallback (in case terminal blocks characters)
+       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`;
+       console.log('\n🔗 CAN\'T SEE THE QR? Click this link to scan from your browser:');
+       console.log(`📡 ${qrUrl}\n`);
     }
 
     if (connection === 'close') {
