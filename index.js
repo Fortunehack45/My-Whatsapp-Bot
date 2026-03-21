@@ -40,7 +40,7 @@ async function startBot() {
     },
     printQRInTerminal: false,
     mobile: false, // Must be false for pairing code
-    browser: Browsers.windows('Chrome'), // Windows Chrome is less strictly filtered
+    browser: ['Mac OS', 'Safari', '14.0.0'], // Mac OS Safari bypass
     keepAliveIntervalMs: 10_000,
     connectTimeoutMs: 60_000,
     defaultQueryTimeoutMs: 60_000,
