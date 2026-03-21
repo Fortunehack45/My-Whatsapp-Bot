@@ -12,6 +12,7 @@ const {
 } = require('@whiskeysockets/baileys');
 const { Boom } = require('@hapi/boom');
 const pino = require('pino');
+const qrcode = require('qrcode-terminal');
 const config = require('./config');
 const { handleMessage } = require('./commands/router');
 const { autoViewStatus } = require('./commands/statusViewer');
@@ -54,6 +55,7 @@ async function startBot() {
     // 1. QR Code Flow (Fallback)
     if (qr && !PAIRING_NUMBER) {
        console.log('\n📱 Scan the QR code above with your WhatsApp to connect!\n');
+       qrcode.generate(qr, { small: true });
     }
 
     // 2. Pairing Code Flow
