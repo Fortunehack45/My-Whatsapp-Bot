@@ -34,22 +34,28 @@ async function startBot() {
   console.log('🔄 STARTING BOT (Dual-Login Enabled)');
   if (PAIRING_NUMBER) console.log(`📱 Pairing Number: ${PAIRING_NUMBER}`);
   
-  // Safety: If we're not registered, clear stale/corrupt session data to avoid "wrong number"
+  // 1. Initialize Auth State
+  const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
+
+  // 2. Safety Cleanup: If not registered, clear stale session data once to avoid "wrong number" errors
   if (!state.creds.registered) {
-    console.log('🧹 Cleaning up stale session data...');
-    fs.emptyDirSync('auth_info_baileys');
+    console.log('🧹 Cleaning up stale/incomplete session data...');
+    // We don't want to infinite loop, so we only clear if it's the first run with this state
+    if (fs.existsSync(path.join('auth_info_baileys', 'creds.json'))) {
+       fs.emptyDirSync('auth_info_baileys');
+       // Re-init after clearing
+       return startBot(); 
+    }
   }
   console.log('───────────────────────────────────────');
 
-  // Multi-file auth state (re-init after potentially clearing)
-  const { state: newState, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
   const { version } = await fetchLatestBaileysVersion();
 
   const sock = makeWASocket({
     version,
     auth: {
-      creds: newState.creds,
-      keys: makeCacheableSignalKeyStore(newState.keys, pino({ level: 'silent' }))
+      creds: state.creds,
+      keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' }))
     },
     printQRInTerminal: true, // Always show QR as a backup
     mobile: false, 
