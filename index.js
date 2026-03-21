@@ -43,9 +43,9 @@ async function startBot() {
   // 1. Initialize Auth State
   const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
 
-  // 2. Aggressive Cleanup: If not registered, wipe EVERYTHING in auth folder to ensure a clean start
-  if (!state.creds.registered) {
-    console.log('🧹 Wiping stale session files for a clean start...');
+  // 2. Force Reset or Aggressive Cleanup: If not registered, wipe EVERYTHING in auth folder to ensure a clean start
+  if (!state.creds.registered || process.env.FORCE_RESET === 'true') {
+    console.log('🧹 Clearing session files for a fresh start...');
     fs.emptyDirSync('auth_info_baileys');
     // Re-init state after wiping folder
     const freshAuth = await useMultiFileAuthState('auth_info_baileys');
@@ -74,41 +74,39 @@ async function startBot() {
   });
 
   // ── AUTHENTICATION FLOW ─────────────────────────────────────────
-  sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr, isNewLogin }) => {
-    // 1. QR Code (Always as fallback)
-    if (qr) {
-       console.log('\n📱 ALTERNATIVE: Scan the QR code below if Pairing Code fails:');
-       qrcode.generate(qr, { small: true });
-    }
-
-    // 2. Pairing Code Flow
-    if (qr && !state.creds.registered && !sock._pairingRequested) {
-      if (!PAIRING_NUMBER) {
-        console.log('ℹ️  Pairing Code skipped: PAIRING_NUMBER is not set in environment.');
-        sock._pairingRequested = true; // Don't log this again
-        return;
-      }
-
+  
+  // 3. Pairing Code Flow (Triggers immediately if not registered)
+  if (!state.creds.registered) {
+    if (!PAIRING_NUMBER) {
+      console.log('ℹ️  Pairing Code skipped: PAIRING_NUMBER is not set in environment.');
+    } else {
       console.log(`📡 Preparing to request Pairing Code for ${PAIRING_NUMBER}...`);
-      sock._pairingRequested = true;
-      try {
-        await new Promise(r => setTimeout(r, 6000));
-        console.log(`🚀 Sending Pairing Code request to WhatsApp servers...`);
-        const code = await sock.requestPairingCode(PAIRING_NUMBER);
-        console.log('\n' + '═'.repeat(50));
-        console.log('📲  WHATSAPP PAIRING CODE: ' + code);
-        console.log('═'.repeat(50));
-        console.log('  1. Open WhatsApp on your phone');
-        console.log('  2. Tap ⋮ Menu → Linked Devices');
-        console.log('  3. Tap "Link with phone number"');
-        console.log(`  4. Enter your number: ${PAIRING_NUMBER}`);
-        console.log('  5. Enter the code above when prompted');
-        console.log('═'.repeat(50) + '\n');
-      } catch (err) {
-        console.log('❌ CRITICAL ERROR requesting Pairing Code:');
-        console.error(err);
-        console.log('💡 Tip: If you see "Forbidden", your account might be restricted from pairing codes. Try QR instead.');
-      }
+      setTimeout(async () => {
+        try {
+          console.log(`🚀 Sending Pairing Code request to WhatsApp servers...`);
+          const code = await sock.requestPairingCode(PAIRING_NUMBER);
+          console.log('\n' + '═'.repeat(50));
+          console.log('📲  WHATSAPP PAIRING CODE: ' + code);
+          console.log('═'.repeat(50));
+          console.log('  1. Open WhatsApp on your phone');
+          console.log('  2. Tap ⋮ Menu → Linked Devices');
+          console.log('  3. Tap "Link with phone number"');
+          console.log(`  4. Enter your number: ${PAIRING_NUMBER}`);
+          console.log('  5. Enter the code above when prompted');
+          console.log('═'.repeat(50) + '\n');
+        } catch (err) {
+          console.log('❌ CRITICAL ERROR requesting Pairing Code:');
+          console.error(err);
+          console.log('💡 Tip: If you see "Forbidden", your account might be restricted from pairing codes. Try QR instead.');
+        }
+      }, 6000);
+    }
+  }
+
+  sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr, isNewLogin }) => {
+    if (qr) {
+       console.log('\n📱 ALTERNATIVE: Scan the QR code below if Phone Link fails:');
+       qrcode.generate(qr, { small: true });
     }
 
     if (connection === 'close') {
