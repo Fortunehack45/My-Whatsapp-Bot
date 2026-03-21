@@ -89,44 +89,43 @@ async function startBot() {
   let pairingRequestSent = false;
 
   sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
-    // 1. Handle QR Code
+    // 1. Handle QR Code (This is now the HIGHEST PRIORITY)
     if (qr) {
-       console.log('\n' + '█'.repeat(40));
-       console.log('📱  THE ULTIMATE SCAN METHOD (STABLE)');
+       console.log('\n' + '█'.repeat(60));
+       console.log('📱  FASTEST CONNECTION METHOD: SCAN THE QR URL BELOW');
+       console.log('────────────────────────────────────────────────────────────');
        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`;
-       console.log('🔗  CLICK THIS LINK TO SCAN:');
+       console.log('🔗  CLICK TO SCAN:');
        console.log('📡  ' + qrUrl);
-       console.log('█'.repeat(40) + '\n');
+       console.log('────────────────────────────────────────────────────────────');
+       console.log('💡  This method is 100% stable and avoids "Wrong Number" errors.');
+       console.log('█'.repeat(60) + '\n');
+       
        qrcode.generate(qr, { small: true });
     }
 
-    // 2. Handle Pairing Code
+    // 2. Handle Pairing Code (SECONDARY FALLBACK - Delayed)
     if (!state.creds.registered && PAIRING_NUMBER && !pairingRequestSent) {
       pairingRequestSent = true; 
-      console.log(`📡 Detected unlinked session. Requesting code for ${PAIRING_NUMBER}...`);
       
-      // VERY tiny delay (500ms) to ensure socket is ready but beat the 405 error
+      // Wait 5 seconds before asking for Pairing Code to give QR a chance to show up first
       setTimeout(async () => {
         try {
-          if (sock) {
-            console.log(`🚀 Sending Pairing Code request now...`);
+          if (sock && !state.creds.registered) {
+            console.log(`📡 Secondary attempt: Requesting Pairing Code for ${PAIRING_NUMBER}...`);
             const code = await sock.requestPairingCode(PAIRING_NUMBER);
             console.log('\n' + '═'.repeat(50));
             console.log('📲  WHATSAPP PAIRING CODE: ' + code);
             console.log('═'.repeat(50));
-            console.log('  1. Open WhatsApp on your phone');
-            console.log('  2. Tap ⋮ Menu → Linked Devices');
-            console.log('  3. Tap "Link with phone number"');
-            console.log(`  4. Enter your number: ${PAIRING_NUMBER}`);
-            console.log('  5. Enter the code above when prompted');
+            console.log('  (If your phone says "Wrong Number", use the QR LINK above!)');
             console.log('═'.repeat(50) + '\n');
           }
         } catch (err) {
-          console.log('❌ ERROR requesting Pairing Code:');
+          console.log('❌ Pairing Code attempt failed (Use QR Link instead):');
           console.error(err.message || err);
           pairingRequestSent = false; 
         }
-      }, 500); 
+      }, 5000); 
     }
 
     if (connection === 'close') {
@@ -135,7 +134,7 @@ async function startBot() {
 
       console.log(`Connection closed (code: ${statusCode}). Reconnecting: ${shouldReconnect}`);
       if (shouldReconnect) {
-        // Longer 10s delay to avoid IP rate-limiting from WhatsApp
+        // 10s delay to avoid IP rate-limiting
         setTimeout(startBot, 10000); 
       } else {
         console.log('Logged out. Delete auth_info_baileys/ and restart to re-link.');
