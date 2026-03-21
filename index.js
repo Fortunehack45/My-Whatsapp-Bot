@@ -74,7 +74,7 @@ async function startBot() {
     },
     printQRInTerminal: true, // Always show QR as a backup
     mobile: false, 
-    browser: ["Chrome (Android)", "Chrome", "1.0.0"],
+    browser: Browsers.macOS('Desktop'),
     keepAliveIntervalMs: 10_000,
     connectTimeoutMs: 60_000,
     defaultQueryTimeoutMs: 60_000,
