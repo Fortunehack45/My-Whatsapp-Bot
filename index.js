@@ -38,12 +38,15 @@ async function startBot() {
       creds: state.creds,
       keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' }))
     },
-    printQRInTerminal: false,  // We use pairing code — no QR
-    browser: Browsers.ubuntu('Chrome'),
+    printQRInTerminal: false,
+    mobile: false, // Must be false for pairing code
+    browser: Browsers.windows('Chrome'), // Windows Chrome is less strictly filtered
     keepAliveIntervalMs: 10_000,
     connectTimeoutMs: 60_000,
     defaultQueryTimeoutMs: 60_000,
     generateHighQualityLinkPreview: true,
+    syncFullHistory: false,
+    markOnlineOnConnect: true
   });
 
   // ── PHONE NUMBER PAIRING CODE ──────────────────────────────────
