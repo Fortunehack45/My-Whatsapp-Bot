@@ -54,9 +54,9 @@ async function startBot() {
   // 1. Initialize Auth State
   const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
 
-  // 2. Force Reset or Aggressive Cleanup
-  if (!state.creds.registered || process.env.FORCE_RESET === 'true') {
-    console.log('[HEARTBEAT] 3. Wiping session (Fresh Start)...');
+  // 2. ONLY Wipe Session if FORCE_RESET is explicit
+  if (process.env.FORCE_RESET === 'true') {
+    console.log('[HEARTBEAT] 3. FORCE_RESET active: Wiping session...');
     fs.emptyDirSync('auth_info_baileys');
     const freshAuth = await useMultiFileAuthState('auth_info_baileys');
     state.creds = freshAuth.state.creds;
@@ -75,8 +75,8 @@ async function startBot() {
     },
     printQRInTerminal: false,
     mobile: false, 
-    browser: Browsers.ubuntu('Chrome'),
-    keepAliveIntervalMs: 20_000,
+    browser: Browsers.macOS('Chrome'), // macOS is often more trusted for server-side links
+    keepAliveIntervalMs: 30_000,
     connectTimeoutMs: 60_000,
     defaultQueryTimeoutMs: 60_000,
     generateHighQualityLinkPreview: true,
@@ -105,7 +105,7 @@ async function startBot() {
       pairingRequestSent = true; 
       console.log(`📡 Detected unlinked session. Requesting code for ${PAIRING_NUMBER}...`);
       
-      // Short 2s delay
+      // VERY tiny delay (500ms) to ensure socket is ready but beat the 405 error
       setTimeout(async () => {
         try {
           if (sock) {
@@ -126,22 +126,17 @@ async function startBot() {
           console.error(err.message || err);
           pairingRequestSent = false; 
         }
-      }, 2000); 
+      }, 500); 
     }
 
     if (connection === 'close') {
-      // Clear previous always-online heartbeat
-      if (alwaysOnlineInterval) {
-        clearInterval(alwaysOnlineInterval);
-        alwaysOnlineInterval = null;
-      }
-
       const statusCode = (new Boom(lastDisconnect?.error))?.output?.statusCode;
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
 
       console.log(`Connection closed (code: ${statusCode}). Reconnecting: ${shouldReconnect}`);
       if (shouldReconnect) {
-        setTimeout(startBot, 3000); // Wait 3s before reconnecting
+        // Longer 10s delay to avoid IP rate-limiting from WhatsApp
+        setTimeout(startBot, 10000); 
       } else {
         console.log('Logged out. Delete auth_info_baileys/ and restart to re-link.');
       }
