@@ -30,6 +30,14 @@ const statusStore = {};
 
 let alwaysOnlineInterval = null; // Reference so we can clear it on reconnect
 
+// GLOBAL ERROR HANDLER (Catch silent crashes)
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ UNHANDLED REJECTION:', reason);
+});
+process.on('uncaughtException', (err) => {
+    console.error('❌ UNCAUGHT EXCEPTION:', err);
+});
+
 async function startBot() {
   console.log('\n[HEARTBEAT] 1. startBot() triggered.');
   console.log('───────────────────────────────────────');
